@@ -1,7 +1,7 @@
 
 # The MIT License (MIT)
 
-Copyright (c) rok Jméno Příjmení, Jméno Příjmení, Jméno Příjmení
+Copyright (c) 2026 Matěj Kubíček, Eva Brátová, Karel Čapek
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
