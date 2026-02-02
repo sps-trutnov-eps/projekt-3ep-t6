@@ -16,8 +16,27 @@ app.use(express.static(path.join(__dirname, 'public')));
 const homeRoutes = require('./routes/homeRoutes');
 app.use('/', homeRoutes);
 
-// Server
+// DATABAZE
+const User = require('./models/userModel');
+const Game = require('./models/hraModel');
+
+const initDb = async () => {
+  try {
+    // Nejdřív User (kvůli cizím klíčům v Game)
+    await User.createTable();
+    await Game.createTable();
+    console.log('Database tables initialized');
+  } catch (err) {
+    console.error('Error initializing database:', err);
+    process.exit(1); // Pokud se nepovede spojit s DB, zabije se to
+  }
+};
+
+// Start Server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+
+initDb().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
 });
