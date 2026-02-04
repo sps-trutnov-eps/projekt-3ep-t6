@@ -90,3 +90,4 @@ typings/
 package-lock.json
 
 .vs/
+.DS_Store

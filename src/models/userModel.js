@@ -13,6 +13,12 @@ class User {
         password VARCHAR(255) NOT NULL,
         wins INTEGER DEFAULT 0,
         losses INTEGER DEFAULT 0,
+        WL_ratio FLOAT GENERATED ALWAYS AS (
+          CASE 
+            WHEN losses = 0 THEN wins::FLOAT
+            ELSE wins::FLOAT / losses::FLOAT
+          END
+        ) STORED,
         win_streak INTEGER DEFAULT 0,
         friends JSONB DEFAULT '[]',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
