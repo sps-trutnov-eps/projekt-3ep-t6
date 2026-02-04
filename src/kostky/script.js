@@ -4,6 +4,8 @@ import { drawScene } from "./draw.js";
 const cnv = document.getElementById("cnv");
 var gl = cnv.getContext("webgl");
 
+let squareRotation = 0.0;
+let deltaTime = 0;
 
 gl.clearColor(0, 0, 0, 1);
 gl.clear(gl.COLOR_BUFFER_BIT);
@@ -83,5 +85,17 @@ const programInfo = {
 // objects we'll be drawing.
 const buffers = initBuffers(gl);
 
-// Draw the scene
-drawScene(gl, programInfo, buffers);
+let then = 0;
+
+// Draw the scene repeatedly
+function render(now) {
+  now *= 0.001; // convert to seconds
+  deltaTime = now - then;
+  then = now;
+
+  drawScene(gl, programInfo, buffers, squareRotation);
+  squareRotation += deltaTime;
+
+  requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
