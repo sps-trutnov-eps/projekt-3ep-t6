@@ -15,7 +15,10 @@ app.use('/kostky', express.static(path.join(__dirname, 'kostky')));
 
 // Routes
 const homeRoutes = require('./routes/homeRoutes');
+const matchmakingRoutes = require('./routes/matchmakingRoutes');
+
 app.use('/', homeRoutes);
+app.use('/matchmaking', matchmakingRoutes);
 
 // DATABAZE
 const User = require('./models/userModel');
