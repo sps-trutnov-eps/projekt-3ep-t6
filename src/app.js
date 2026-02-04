@@ -11,6 +11,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/kostky', express.static(path.join(__dirname, 'kostky')));
 
 // Routes
 const homeRoutes = require('./routes/homeRoutes');
@@ -19,6 +20,7 @@ app.use('/', homeRoutes);
 // DATABAZE
 const User = require('./models/userModel');
 const Game = require('./models/hraModel');
+const Room = require('./models/roomModel');
 
 const initDb = async () => {
   try {
