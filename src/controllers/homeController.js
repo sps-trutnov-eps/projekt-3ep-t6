@@ -4,3 +4,5 @@ exports.index = (req, res) => {
     message: 'Welcome to Express MVC!'
   });
 };
+
+// tady muzes volat databazi (priklad: SELECT * FROM Users)
