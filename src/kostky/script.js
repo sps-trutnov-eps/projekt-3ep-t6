@@ -48,6 +48,7 @@ function initShaderProgram(gl, vsSource, fsSource) {
   gl.linkProgram(shaderProgram);
 
   return shaderProgram;
+}
 
 // creates a shader of the given type, uploads the source and
 // compiles it.
@@ -63,7 +64,6 @@ function loadShader(gl, type, source) {
   gl.compileShader(shader);
 
   return shader;
-  }
 }
 // Collect all the info needed to use the shader program.
 // Look up which attribute our shader program is using
