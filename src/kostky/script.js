@@ -4,7 +4,7 @@ import { drawScene } from "./draw.js";
 const cnv = document.getElementById("cnv");
 var gl = cnv.getContext("webgl");
 
-let squareRotation = 0.0;
+let cubeRotation = 0.0;
 let deltaTime = 0;
 
 gl.clearColor(0, 0, 0, 1);
@@ -93,8 +93,8 @@ function render(now) {
   deltaTime = now - then;
   then = now;
 
-  drawScene(gl, programInfo, buffers, squareRotation);
-  squareRotation += deltaTime;
+  drawScene(gl, programInfo, buffers, cubeRotation);
+  cubeRotation += deltaTime;
 
   requestAnimationFrame(render);
 }
