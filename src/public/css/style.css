@@ -14,9 +14,9 @@ a{
     padding: 10px;
 }
 .container {
-    max-width: 1200px;
+    max-width: 100%;
     margin: 0 auto;
-    padding: 20px;
+    padding: 25px 35px;
 }
 
 button {
@@ -30,4 +30,66 @@ button {
 
 button:hover {
     background: #5c8ff6;
+}
+
+/* nav */
+.navbar {
+    background: #667889;
+    padding: 15px 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.nav-container {
+    max-width: 100%;
+    margin: 0;
+    padding: 0px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-logo a {
+    color: white;
+    text-decoration: none;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.nav-menu {
+    list-style: none;
+    display: flex;
+    gap: 30px;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-menu li a {
+    color: #ecf0f1;
+    text-decoration: none;
+    font-size: 16px;
+    transition: color 0.3s;
+}
+
+.nav-menu li a:hover {
+    color: #3498db;
+}
+
+/* footer */
+.footer {
+    background: #667889;
+    padding: 20px 10px;
+    margin-top: 50px;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+}
+
+.footer-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.footer p {
+    color: #ecf0f1;
+    font-size: 14px;
+    margin: 0;
 }
