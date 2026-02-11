@@ -1,7 +1,36 @@
 <%- include('../partials/header') %>
 
 <div class="container">
-    <h1>🎮 Matchmaking</h1>
-    <p>Stránka pro matchmaking - zatím prázdná</p>
+    <div class="matchmaking-wrapper">
+        <h1>Matchmaking</h1>
+        <p class="subtitle">Vyber si herní mód</p>
+        
+        <div class="game-modes">
+            <div class="mode-card" onclick="selectMode('solo')">
+                <div class="mode-icon">👤</div>
+                <h2>Solo</h2>
+                <p>Hraj sám proti počítači</p>
+            </div>
+            
+            <div class="mode-card" onclick="selectMode('multi')">
+                <div class="mode-icon">👥</div>
+                <h2>Multiplayer</h2>
+                <p>Hraj s přáteli nebo ostatními hráči</p>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+    function selectMode(mode) {
+        if (mode === 'solo') {
+            alert('Solo mód - zatím není implementovaný');
+            // Později: window.location.href = '/game/solo';
+        } else if (mode === 'multi') {
+            alert('Multiplayer mód - zatím není implementovaný');
+            // Později: window.location.href = '/matchmaking/lobby';
+        }
+    }
+</script>
+
 <%- include('../partials/footer') %>
