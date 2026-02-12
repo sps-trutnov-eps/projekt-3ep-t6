@@ -1,0 +1,35 @@
+<%- include('../partials/header') %>
+
+<div class="container">
+    <div class="lobby-wrapper">
+        <h1>Multiplayer Lobby</h1>
+        
+        <div class="lobby-actions">
+            <button class="btn-primary" onclick="createRoom()">
+                Vytvořit místnost
+            </button>
+            
+            <button class="btn-secondary" onclick="findPublicRoom()">
+                Najít veřejnou hru
+            </button>
+        </div>
+
+        <div id="room-info" class="room-info" style="display: none;">
+            <h3>Tvoje místnost</h3>
+            <p>Kód místnosti: <strong id="room-code">ABC123</strong></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function createRoom() {
+        document.getElementById('room-info').style.display = 'block';
+        alert('Vytváření místnosti - zatím není implementováno');
+    }
+
+    function findPublicRoom() {
+        alert('Hledání veřejné hry - zatím není implementováno');
+    }
+</script>
+
+<%- include('../partials/footer') %>

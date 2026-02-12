@@ -1,9 +1,10 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title><%= title %></title>
-</head>
-<body>
+<%- include('../partials/header') %>
+
+<div class="container">
   <h1><%= message %></h1>
-</body>
-</html>
+  <p><a href="/kostky/index.html">Kostky</a></p>
+</div>
+
+<%- include('../partials/footer') %>
+
+<%# Tady (EJS soubory) uz se ta data jen iteruji jako Users.forEach(...) %>
