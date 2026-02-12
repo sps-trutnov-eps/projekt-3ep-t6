@@ -1,0 +1,30 @@
+<%- include('../partials/header') %>
+
+<link rel="stylesheet" href="/css/auth.css">
+<script defer src="/js/loginAjax.js"></script>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <h1>Přihlášení</h1>
+
+        <form id="loginForm">
+            <div class="form-auth-div">
+                <label for="username">Uživatelské jméno</label>
+                <input type="text" id="username" name="username" required>
+                <span class="error-username"></span>
+            </div>
+
+            <div class="form-auth-div">
+                <label for="password">Heslo</label>
+                <input type="password" id="password" name="password" required>
+                <span class="error-password"></span>
+            </div>
+
+            <button type="submit" class="auth-button">Přihlásit se</button>
+        </form>
+
+        <div class="form-global-error"></div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -13,12 +13,20 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/kostky', express.static(path.join(__dirname, 'kostky')));
 
+app.use((req, res, next) => {
+    res.locals.user = req.session.user || null;
+    next();
+});
+
+
 // Routes
 const homeRoutes = require('./routes/homeRoutes');
 const matchmakingRoutes = require('./routes/matchmakingRoutes');
+const authRoutes = require("./routes/authRoutes")
 
 app.use('/', homeRoutes);
 app.use('/matchmaking', matchmakingRoutes);
+app.use('/auth', authRoutes)
 
 // DATABAZE
 const User = require('./models/userModel');
