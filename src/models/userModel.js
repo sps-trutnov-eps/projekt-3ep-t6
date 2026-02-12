@@ -8,8 +8,7 @@ class User {
     const sql = `
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
-        first_name VARCHAR(50) NOT NULL,
-        last_name VARCHAR(50) NOT NULL,
+        username VARCHAR(50) NOT NULL,
         password VARCHAR(255) NOT NULL,
         wins INTEGER DEFAULT 0,
         losses INTEGER DEFAULT 0,
@@ -35,18 +34,23 @@ class User {
     return rows[0];
   }
 
+  static async findByUsername(username) {
+    const { rows } = await db.query('SELECT * from users where username = $1', [username]);
+    return rows[0];
+  }
+
   /**
    * Vytvoří nového uživatele
    * jen tam pridej HASH predem
    * BCrypt by mel fungovat i tady
    */
-  static async create({ first_name, last_name, password }) {
+  static async create({ username, password }) {
     const sql = `
-      INSERT INTO users (first_name, last_name, password)
-      VALUES ($1, $2, $3)
+      INSERT INTO users (username, password)
+      VALUES ($1, $2)
       RETURNING *;
     `;
-    const { rows } = await db.query(sql, [first_name, last_name, password]);
+    const { rows } = await db.query(sql, [username, password]);
     return rows[0];
   }
 
