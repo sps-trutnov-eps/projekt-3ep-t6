@@ -3,3 +3,9 @@ exports.getMatchmakingPage = (req, res) => {
     title: 'Matchmaking'
   });
 };
+
+exports.getLobbyPage = (req, res) => {
+  res.render('matchmaking/lobby', { 
+    title: 'Multiplayer Lobby'
+  });
+};

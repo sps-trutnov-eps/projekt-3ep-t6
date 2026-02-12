@@ -1,23 +1,35 @@
-<!DOCTYPE html>
-<html lang="cs">
-<head>
-    <meta charset="UTF-8">
-    <title>Matchmaking</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 100px;
-            background: #f0f0f0;
+<%- include('../partials/header') %>
+
+<div class="container">
+    <div class="matchmaking-wrapper">
+        <h1>Matchmaking</h1>
+        <p class="subtitle">Vyber si herní mód</p>
+        
+        <div class="game-modes">
+            <div class="mode-card" onclick="selectMode('solo')">
+                <div class="mode-icon">👤</div>
+                <h2>Solo</h2>
+                <p>Hraj sám proti počítači</p>
+            </div>
+            
+            <div class="mode-card" onclick="selectMode('multi')">
+                <div class="mode-icon">👥</div>
+                <h2>Multiplayer</h2>
+                <p>Hraj s přáteli nebo ostatními hráči</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function selectMode(mode) {
+        if (mode === 'solo') {
+            alert('Solo mód - zatím není implementovaný');
+            // Později: window.location.href = '/game/solo';
+        } else if (mode === 'multi') {
+            window.location.href = '/matchmaking/lobby';
         }
-        h1 {
-            color: #333;
-        }
-    </style>
-</head>
-<body>
-    <h1>🎮 Matchmaking</h1>
-    <p>Stránka pro matchmaking - zatím prázdná</p>
-</body>
-</html>
+    }
+</script>
+
+<%- include('../partials/footer') %>

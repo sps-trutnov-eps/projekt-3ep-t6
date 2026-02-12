@@ -15,4 +15,4 @@ COPY . .
 EXPOSE 3000
 
 # Spouštěcí příkaz
-CMD ["npm", "start"]
+CMD ["npm", "run", "dev"]

@@ -4,7 +4,7 @@
   "description": "Sem patří umístit package (tzn. v této složce bude `package.json` soubor).",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon app.js",
+    "dev": "nodemon -e js,ejs app.js",
     "start": "node app.js"
   },
   "keywords": [],
