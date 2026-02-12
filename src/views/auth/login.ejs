@@ -1,0 +1,22 @@
+<%- include('../partials/header') %>
+
+<link type="stylesheet" href="/css/auth.css">
+
+<div class="container">
+    <h1><%= message %></h1>
+
+    <form method="post" action="/auth/login">
+        <div class="form-auth-div">
+            <label>Uživatelské jméno</label>
+            <input type="text" for="username">
+            <span></span>
+        </div>
+        <div class="form-auth-div">
+            <label>Heslo</label>
+            <input type="password" for="password">
+            <span></span>
+        </div>
+    </form>
+</div>
+
+<%- include('../partials/footer') %>
