@@ -1,4 +1,5 @@
 const express = require('express');
+const session = require("express-session")
 const path = require('path');
 
 const app = express();
@@ -6,6 +7,21 @@ const app = express();
 // View engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use(session({
+    secret: "some-super-secret-secret",
+    resave: false,
+    saveUninitialized: false
+}));
+
+// zpřístupnění ve views 
+app.use((req, res, next) => {
+    res.locals.user = req.session.user || null;
+    next();
+});
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));

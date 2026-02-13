@@ -15,60 +15,56 @@ exports.getRegister = (req, res) => {
     })
 };
 
-exports.postLogin = (req, res) => {
+exports.postLogin = async (req, res) => {
     const { username, password } = req.body;
 
     let errors = {};
+    if (!username) errors.username = "Zadejte uživatelské jméno.";
+    if (!password) errors.password = "Zadejte heslo.";
+    if (Object.keys(errors).length > 0) return res.status(400).json({ errors });
 
-    if (!password) { errors.password = "Zadejte heslo." }
-    if (!username) { errors.username = "Zadejte uživatelské jméno." }
-
-    if (Object.keys(errors).length > 0)
-        return res.status(400).json({ errors });
-
-    const user = findByUsername(username)
-
+    const user = await findByUsername(username);
     if (!user) {
         errors.username = "Uživatel nebyl nalezen.";
         return res.status(400).json({ errors });
     }
 
-    if (!BCrypt.compare(password, user.password)) {
+    const valid = await BCrypt.compare(password, user.password);
+    if (!valid) {
         errors.password = "Špatné heslo.";
         return res.status(400).json({ errors });
     }
 
-    req.session.id = user.id;
-    req.session.username = user.username;
-
-    res.json({ redirect: "/"});
+    req.session.user = { id: user.id, username: user.username };
+    res.json({ redirect: "/" });
 };
 
-exports.postRegister = (req, res) => {
+exports.postRegister = async (req, res) => {
     const { username, password, passwordConfirm } = req.body;
 
     let errors = {};
+    if (!username) errors.username = "Zadejte uživatelské jméno.";
+    if (!password) errors.password = "Zadejte heslo.";
+    if (password !== passwordConfirm) errors.passwordConfirm = "Hesla se neschodují.";
 
-    if (!password) { errors.password = "Zadejte heslo." }
-    if (!username) { errors.username = "Zadejte uživatelské jméno." }
+    if (Object.keys(errors).length > 0) return res.status(400).json({ errors });
 
-    if (password != passwordConfirm) {
-        errors.passwordConfirm = "Hesla se neschodují."
-    }
-
-    if (Object.keys(errors).length > 0)
-        return res.status(400).json({ errors });
-
-    if (findByUsername(username)) {
+    const existingUser = await findByUsername(username);
+    if (existingUser) {
         errors.username = "Uživatelské jméno je již zabrané.";
         return res.status(400).json({ errors });
     }
 
-    const hash = BCrypt.hash(password);
-    const newUser = create(username, hash);
+    const hash = await BCrypt.hash(password, 10);
+    const newUser = await create({ username, password: hash });
 
-    req.session.id = newUser.id;
-    req.session.username = newUser.username;
+    req.session.user = { id: newUser.id, username: newUser.username };
 
-    res.json({ redirect: "/"});
+    res.json({ redirect: "/" });
 };
+
+// není ajax
+exports.postLogout = (req, res) => {
+    req.session.destroy();
+    res.redirect = "/auth/login";
+}
