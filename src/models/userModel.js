@@ -8,7 +8,7 @@ class User {
     const sql = `
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
-        username VARCHAR(50) NOT NULL,
+        username VARCHAR(50) NOT NULL unique,
         password VARCHAR(255) NOT NULL,
         wins INTEGER DEFAULT 0,
         losses INTEGER DEFAULT 0,
