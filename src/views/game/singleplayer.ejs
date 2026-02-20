@@ -1,0 +1,17 @@
+<%- include('../partials/header') %>
+
+<span class="display:none;" id="player-id"><%= user.id %></span>
+<script src="/js/game/singleplayer.js" defer></script>
+
+<div class="container">
+    <h1><%= message %></h1>
+    <div class="game-state">
+        <p>Hrajete proti: <span id="opponent-name"></span></p>
+        <p>Vaše celkové skóre: <span id="player-score"></span></p>
+        <p>Skóre soupeře: <span id="opponent-score"></span></p>
+        <p>V tomto kole jste naházeli: <span id="current-roll"></span></p>
+        <button id="roll-dice">Hodit kostkami</button>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
