@@ -185,18 +185,30 @@
         if (reset) resetCreatePanel();
     }
 
-    function createRoom() {
-        document.getElementById('btn-do-create').style.display = 'none';
-        document.getElementById('create-loading').style.display = 'block';
+    async function createRoom() {
+    document.getElementById('btn-do-create').style.display = 'none';
+    document.getElementById('create-loading').style.display = 'block';
 
-        // TODO: POST /matchmaking/create
-        setTimeout(() => {
-            const code = generateFakeCode();
-            document.getElementById('room-code-text').textContent = code;
-            document.getElementById('create-loading').style.display = 'none';
-            document.getElementById('create-result').style.display = 'block';
-        }, 800);
+    try {
+        const res = await fetch('/matchmaking/create', { method: 'POST' });
+        const data = await res.json();
+
+        if (!data.success) {
+            alert(data.error || 'Chyba při vytváření místnosti');
+            resetCreatePanel();
+            return;
+        }
+
+        window._currentRoomId = data.room.id;
+
+        document.getElementById('room-code-text').textContent = data.room.code;
+        document.getElementById('create-loading').style.display = 'none';
+        document.getElementById('create-result').style.display = 'block';
+    } catch (err) {
+        alert('Chyba spojení se serverem');
+        resetCreatePanel();
     }
+}
 
     function resetCreatePanel() {
         document.getElementById('btn-do-create').style.display = 'block';
@@ -208,11 +220,22 @@
         if (vis) vis.textContent = 'privátní';
     }
 
-    function toggleVisibility() {
-        const isPublic = document.getElementById('toggle-public').checked;
-        document.getElementById('visibility-status').textContent = isPublic ? 'veřejná' : 'privátní';
-        // TODO: PATCH /matchmaking/room/:id/visibility
+    async function toggleVisibility() {
+    const isPublic = document.getElementById('toggle-public').checked;
+    document.getElementById('visibility-status').textContent = isPublic ? 'veřejná' : 'privátní';
+
+    if (!window._currentRoomId) return;
+
+    try {
+        await fetch('/matchmaking/room/visibility', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ roomId: window._currentRoomId, isPublic })
+        });
+    } catch (err) {
+        console.error('Nepodařilo se změnit viditelnost:', err);
     }
+}
 
     function copyCode() {
         const code = document.getElementById('room-code-text').textContent;
@@ -241,10 +264,6 @@
         // TODO: GET /matchmaking/public
     }
 
-    function generateFakeCode() {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-        return Array.from({length: 6}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-    }
 </script>
 
 <%- include('../partials/footer') %>
