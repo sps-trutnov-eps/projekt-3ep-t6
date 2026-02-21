@@ -9,10 +9,12 @@ body {
     background: #ffffff;
     color: #333;
 }
-a{
+
+a {
     text-decoration: none;
     padding: 10px;
 }
+
 .container {
     max-width: 100%;
     margin: 0 auto;
@@ -183,6 +185,8 @@ button:hover {
 .lobby-wrapper {
     text-align: center;
     padding: 40px 20px;
+    max-width: 900px;
+    margin: 0 auto;
 }
 
 .lobby-wrapper h1 {
@@ -191,30 +195,183 @@ button:hover {
     color: #2c3e50;
 }
 
-.lobby-actions {
-    display: flex;
-    gap: 20px;
-    justify-content: center;
-    margin: 40px 0;
-    flex-wrap: wrap;
+.lobby-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
 }
 
-.room-info {
-    background: #ecf0f1;
-    border-radius: 10px;
-    padding: 30px;
-    margin-top: 30px;
-    max-width: 500px;
+.lobby-card {
+    background: white;
+    border: 2px solid #ecf0f1;
+    border-radius: 15px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    transition: all 0.3s;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.lobby-card:hover {
+    border-color: #3498db;
+    box-shadow: 0 5px 20px rgba(52, 152, 219, 0.3);
+}
+
+.lobby-card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.lobby-card h2 {
+    font-size: 1.3rem;
+    margin: 0.25rem 0 0.5rem;
+    color: #667889;
+}
+
+.lobby-card p {
+    font-size: 0.9rem;
+    color: #667889;
+    margin-bottom: 1.25rem;
+}
+
+.lobby-panel {
+    margin-top: 2rem;
+    background: #f8f9fa;
+    border: 2px solid #ecf0f1;
+    border-radius: 15px;
+    padding: 1.5rem;
+    max-width: 480px;
     margin-left: auto;
     margin-right: auto;
+    animation: slideIn 0.2s ease;
 }
 
-.room-info h3 {
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
     color: #2c3e50;
-    margin-bottom: 15px;
 }
 
-.room-info strong {
-    color: #3498db;
-    font-size: 20px;
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+    color: #333;
+    padding: 0.25rem 0.5rem;
 }
+.btn-close:hover { opacity: 1; background: none; }
+
+.panel-label {
+    display: block;
+    font-size: 0.85rem;
+    color: #667889;
+    margin-bottom: 0.5rem;
+    text-align: left;
+}
+
+.panel-hint {
+    font-size: 0.82rem;
+    color: #95a5a6;
+    margin-top: 0.5rem;
+    text-align: left;
+}
+
+.panel-error {
+    font-size: 0.85rem;
+    color: #e74c3c;
+    margin-top: 0.5rem;
+    text-align: left;
+}
+
+.room-code-display {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: #ecf0f1;
+    border: 2px solid #dde1e7;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+}
+
+#room-code-text {
+    font-size: 1.8rem;
+    font-family: monospace;
+    letter-spacing: 0.15em;
+    flex: 1;
+    text-align: center;
+    color: #3498db;
+}
+
+.btn-copy {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: transform 0.15s;
+    padding: 0;
+}
+.btn-copy:hover { transform: scale(1.2); background: none; }
+
+.code-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1.4rem;
+    font-family: monospace;
+    letter-spacing: 0.2em;
+    text-align: center;
+    background: #ecf0f1;
+    border: 2px solid #dde1e7;
+    border-radius: 8px;
+    color: #2c3e50;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+.code-input:focus { border-color: #3498db; }
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    font-size: 0.95rem;
+    margin-top: 1rem;
+    color: #2c3e50;
+}
+.toggle-label input { display: none; }
+
+.toggle-slider {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: #bdc3c7;
+    border-radius: 999px;
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+.toggle-slider::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 18px; height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left 0.2s;
+}
+.toggle-label input:checked + .toggle-slider { background: #3498db; }
+.toggle-label input:checked + .toggle-slider::after { left: 23px; }
