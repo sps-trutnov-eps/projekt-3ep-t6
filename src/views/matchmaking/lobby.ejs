@@ -248,15 +248,30 @@
         });
     }
 
-    function joinRoom() {
-        const code = document.getElementById('join-code-input').value.trim();
-        document.getElementById('join-error').style.display = 'none';
-        if (code.length < 4) {
+    async function joinRoom() {
+    const code = document.getElementById('join-code-input').value.trim();
+    document.getElementById('join-error').style.display = 'none';
+
+    if (code.length < 4) {
+        document.getElementById('join-error').style.display = 'block';
+        return;
+    }
+
+    try {
+        const res = await fetch(`/matchmaking/join/${code}`, { method: 'POST' });
+        const data = await res.json();
+
+        if (!data.success) {
+            document.getElementById('join-error').textContent = data.error || 'Místnost nenalezena nebo je plná.';
             document.getElementById('join-error').style.display = 'block';
-            return;
+         return;
         }
-        // TODO: GET /matchmaking/room/:code
-        alert('Připojování ke kódu ' + code + ' – zatím není implementováno');
+
+        alert(`Úspěšně připojeno k místnosti s kódem ${code}! Přesměrování do hry bude brzy...`);
+        } catch (err) {
+            document.getElementById('join-error').textContent = 'Chyba spojení se serverem.';
+            document.getElementById('join-error').style.display = 'block';
+        }
     }
 
     function findPublicRoom() {
