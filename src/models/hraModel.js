@@ -10,7 +10,8 @@ class Game {
         id SERIAL PRIMARY KEY,
         player1_id INTEGER REFERENCES users(id),
         player2_id INTEGER REFERENCES users(id),
-        current_turn_id INTEGER REFERENCES users(id),
+        game_mode VARCHAR(20) DEFAULT 'MULTIPLAYER',  -- 'MULTIPLAYER', 'SINGLEPLAYER'
+        current_turn_id INTEGER REFERENCES users(id), -- null když singleplayer ai
         winner_id INTEGER REFERENCES users(id),
         p1_score INTEGER DEFAULT 0,
         p2_score INTEGER DEFAULT 0,

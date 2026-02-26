@@ -7,6 +7,17 @@ exports.getSingleplayer = (req, res) => {
     });
 }
 
+exports.newSingleplayerGame = async (req, res) => {
+    try {
+        const newGame = await gameModel.createSingleplayerGame(req.session.userId);
+        req.session.gameId = newGame.id;
+        res.redirect('/game/singleplayer');
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to create game' });
+    }
+}
+
 exports.getGameState = async (req, res) => {
     if (!req.session.gameId) {
         return res.status(400).json({ error: 'No active game' });
