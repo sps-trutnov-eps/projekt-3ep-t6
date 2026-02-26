@@ -23,7 +23,13 @@ class User {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
-    return db.query(sql);
+    await db.query(sql);
+
+    await db.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(50) UNIQUE;
+      ALTER TABLE users DROP COLUMN IF EXISTS first_name;
+      ALTER TABLE users DROP COLUMN IF EXISTS last_name;  
+    `);
   }
 
   /**

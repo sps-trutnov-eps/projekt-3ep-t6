@@ -66,5 +66,5 @@ exports.postRegister = async (req, res) => {
 // není ajax
 exports.postLogout = (req, res) => {
     req.session.destroy();
-    res.redirect = "/auth/login";
+    res.redirect("/auth/login");
 }
