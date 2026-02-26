@@ -106,3 +106,28 @@ exports.joinRoom = async (req, res) => {
     res.status(500).json({ error: 'Chyba serveru' });
   }
 };
+
+exports.findPublicRoom = async (req, res) => {
+  try {
+    if (!req.session.user) {
+      return res.status(401).json({ error: 'Nejsi přihlášen' });
+    }
+
+    const rooms = await Room.listPublic();
+
+    const available = rooms.filter(r => r.creator_id !== req.session.user.id);
+
+    if (available.length === 0) {
+      return res.status(404).json({ error: 'Žádná veřejná místnost není dostupná' });
+    }
+
+    // vezme prvni dostupnou
+    const room = available[0];
+    const updated = await Room.join(room.id, req.session.user.id);
+
+    res.json({ success: true, room: updated });
+  } catch (err) {
+    console.error('findPublicRoom error:', err);
+    res.status(500).json({ error: 'Chyba serveru' });
+  }
+};

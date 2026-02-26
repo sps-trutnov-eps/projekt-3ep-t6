@@ -8,5 +8,6 @@ router.post('/create', matchmakingController.createRoom);
 router.patch('/room/visibility', matchmakingController.setVisibility);
 router.get('/room/:code', matchmakingController.getRoomByCode);
 router.post('/join/:code', matchmakingController.joinRoom);
+router.post('/public', matchmakingController.findPublicRoom);
 
 module.exports = router;

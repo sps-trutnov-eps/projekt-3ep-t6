@@ -274,10 +274,23 @@
         }
     }
 
-    function findPublicRoom() {
-        showPanel('random');
-        // TODO: GET /matchmaking/public
+    async function findPublicRoom() {
+    showPanel('random');
+
+        try {
+            const res = await fetch('/matchmaking/public', { method: 'POST' });
+            const data = await res.json();
+
+            if (!data.success) {
+                document.querySelector('#panel-random .panel-body p').textContent = data.error || 'Žádná hra není dostupná.';
+                return;
+        }
+
+        alert('Připojeno do veřejné místnosti! Přesměrování do hry bude brzy...');
+    } catch (err) {
+        document.querySelector('#panel-random .panel-body p').textContent = 'Chyba spojení se serverem.';
     }
+}
 
 </script>
 
