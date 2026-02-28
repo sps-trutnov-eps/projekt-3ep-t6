@@ -114,7 +114,8 @@ class Game {
     // Dynamicky sestavíme query podle toho, komu přičítáme
     const sql = `
       UPDATE games
-      SET ${columnToUpdate} = ${columnToUpdate} + turn_score,
+      SET 
+          ${columnToUpdate} = ${columnToUpdate} + turn_score,
           turn_score = 0,
           dice_left = 6,
           current_turn_id = $2
