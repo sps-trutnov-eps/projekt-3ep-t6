@@ -4,8 +4,9 @@
   "description": "Sem patří umístit package (tzn. v této složce bude `package.json` soubor).",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon -e js,ejs app.js",
-    "start": "node app.js"
+    "build:shared": "copy src\\shared\\scoringEngine.js public\\js\\game\\scoringEngine.js",
+    "dev": "npm run build:shared && nodemon -e js,ejs app.js",
+    "start": "npm run build:shared && node app.js"
   },
   "keywords": [],
   "author": "",
