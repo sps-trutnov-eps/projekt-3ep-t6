@@ -10,15 +10,15 @@ class Game {
         id SERIAL PRIMARY KEY,
         player1_id INTEGER REFERENCES users(id),
         player2_id INTEGER REFERENCES users(id),
-        game_mode VARCHAR(20) DEFAULT 'MULTIPLAYER',  -- 'MULTIPLAYER', 'SINGLEPLAYER'
+        game_mode VARCHAR(12) DEFAULT 'MULTIPLAYER',  -- 'MULTIPLAYER', 'SINGLEPLAYER'
         current_turn_id INTEGER REFERENCES users(id), -- null když singleplayer ai
         winner_id INTEGER REFERENCES users(id),
-        p1_score INTEGER DEFAULT 0,
-        p2_score INTEGER DEFAULT 0,
-        turn_score INTEGER DEFAULT 0,
+        p1_score INTEGER DEFAULT 0, -- celkové skóre hráče 1
+        p2_score INTEGER DEFAULT 0, -- celkové skóre hráče 2 (nebo AI)
+        turn_score INTEGER DEFAULT 0, -- body na stole
         dice_left INTEGER DEFAULT 6,
         status VARCHAR(20) DEFAULT 'ACTIVE', -- 'ACTIVE', 'FINISHED'
-        last_roll JSONB DEFAULT '[]',
+        last_roll JSONB DEFAULT '[]', -- co má být zde?
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
