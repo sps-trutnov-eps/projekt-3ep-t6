@@ -1,3 +1,12 @@
+// init-buffers.js
+// ----------------
+// Module responsible for creating all GPU buffers needed to
+time a textured cube.  It exports a single helper `initBuffers`.
+// Each sub‑function returns a WebGLBuffer already bound and
+// populated with the appropriate data (positions, texture
+// coordinates, indices).  The caller (main `script.js`) will
+// later supply these buffers when drawing.
+
 function initBuffers(gl) {
   const positionBuffer = initPositionBuffer(gl);
   const textureCoordBuffer = initTextureBuffer(gl);

@@ -1,3 +1,11 @@
+/*
+  script.js
+  ---------
+  Entry point for the WebGL demo.  Initializes the GL context,
+  compiles shaders, creates program info and buffers, loads a
+  texture, and then starts the render loop.  The global variables
+  `cubeRotation`, `deltaTime`, and `then` manage animation timing.
+*/
 import { initBuffers } from "./init-buffers.js";
 import { drawScene } from "./draw.js";
 
@@ -162,6 +170,9 @@ const texture = loadTexture(gl, "cubetexture.png");
 // Flip image pixels into the bottom-to-top order that WebGL expects.
 gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
+// `then` and `deltaTime` are used to compute elapsed time
+// between frames so that rotation speed is independent of
+// actual frame rate.
 let then = 0;
 
 // Draw the scene repeatedly
