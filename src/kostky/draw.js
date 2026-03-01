@@ -1,3 +1,11 @@
+// draw.js
+// -------
+// Contains the `drawScene` function which sets up the camera
+// projection, model‑view transforms (including rotation), binds
+// attributes/uniforms and issues the draw call for the cube.
+// Also provides helpers for enabling the vertex attributes for
+// position, color and texture coordinates.
+
 const { mat4 } = window;
 
 function drawScene(gl, programInfo, buffers, texture, cubeRotation) {
