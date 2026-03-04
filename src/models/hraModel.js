@@ -141,6 +141,17 @@ class Game {
     const { rows } = await db.query(sql, [gameId, winnerId]);
     return rows[0];
   }
+  
+    static async createSingleplayerGame(playerId) {
+      const sql = `
+        INSERT INTO games (player1_id, game_mode, dice_left)
+        VALUES ($1, 'SINGLEPLAYER', 6)
+        RETURNING *;
+      `;
+      const { rows } = await db.query(sql, [playerId]);
+      return rows[0];
+  }
 }
+
 
 module.exports = Game;

@@ -30,16 +30,11 @@ app.use((req, res, next) => {
 const homeRoutes = require('./routes/homeRoutes');
 const matchmakingRoutes = require('./routes/matchmakingRoutes');
 const authRoutes = require("./routes/authRoutes");
+const gameRoutes = require("./routes/gameRoutes");
 
 app.use('/', homeRoutes);
 app.use('/matchmaking', matchmakingRoutes);
 app.use('/auth', authRoutes);
-const authRoutes = require("./routes/authRoutes")
-const gameRoutes = require("./routes/gameRoutes")
-
-app.use('/', homeRoutes);
-app.use('/matchmaking', matchmakingRoutes);
-app.use('/auth', authRoutes)
 app.use('/game', gameRoutes);
 
 // Databaze
@@ -59,7 +54,6 @@ const initDb = async () => {
   }
 };
 
-// Start server
 const PORT = process.env.PORT || 3000;
 
 initDb().then(() => {

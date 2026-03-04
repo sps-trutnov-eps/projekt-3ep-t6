@@ -9,7 +9,11 @@ exports.getSingleplayer = (req, res) => {
 
 exports.newSingleplayerGame = async (req, res) => {
     try {
-        const newGame = await gameModel.createSingleplayerGame(req.session.userId);
+        if (!req.session.user) {
+            return res.redirect('/auth/login');
+        }
+
+        const newGame = await gameModel.createSingleplayerGame(req.session.user.id);
         req.session.gameId = newGame.id;
         res.redirect('/game/singleplayer');
     } catch (err) {
