@@ -4,22 +4,25 @@
 <script src="/js/game/singleplayer.js" defer></script>
 
 <div class="container">
-    <h1><%= message %></h1>
+    <div class="game-wrapper">
+        <h1><%= message %></h1>
 
-    <form action="/game/singleplayer/new" method="POST">
-        <button type="submit" class="btn-primary">Začít novou hru</button>
-    </form>
+        <form action="/game/singleplayer/new" method="POST" style="margin-bottom: 2rem;">
+            <button type="submit" class="btn-primary">Začít novou hru</button>
+        </form>
 
-    <div class="game-state">
-        <p>Hrajete proti: <span id="opponent-name"></span></p>
-        <p>Vaše celkové skóre: <span id="player-score"></span></p>
-        <p>Celkové skóre soupeře: <span id="opponent-score"></span></p>
-        <p>V tomto kole jste naházeli: <span id="current-roll"></span></p>
-        <button id="roll-dice">Hodit kostkami</button>
-    </div>
-    <div class="game-board">
-        <p>Kostky: <span id="dice"></span></p>
-        <p>Body na stole: <span id="turn-score"></span></p>
+        <div class="game-state">
+            <p>Hrajete proti: <span id="opponent-name"></span></p>
+            <p>Vaše celkové skóre: <span id="player-score"></span></p>
+            <p>Celkové skóre soupeře: <span id="opponent-score"></span></p>
+            <p>V tomto kole jste naházeli: <span id="current-roll"></span></p>
+            <button id="roll-dice" class="btn-primary">Hodit kostkami</button>
+        </div>
+
+        <div class="game-board">
+            <p>Kostky: <span id="dice"></span></p>
+            <p>Body na stole: <span id="turn-score"></span></p>
+        </div>
     </div>
 </div>
 
