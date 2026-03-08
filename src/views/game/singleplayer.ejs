@@ -7,9 +7,11 @@
     <div class="game-wrapper">
         <h1><%= message %></h1>
 
-        <form action="/game/singleplayer/new" method="POST" style="margin-bottom: 2rem;">
-            <button type="submit" class="btn-primary">Začít novou hru</button>
-        </form>
+        <div id="game-finished" display:none;>
+            <form action="/game/singleplayer/new" method="POST" style="margin-bottom: 2rem;">
+                <button type="submit" class="btn-primary">Začít novou hru</button>
+            </form>
+        </div>
 
         <div class="game-state">
             <p>Hrajete proti: <span id="opponent-name"></span></p>

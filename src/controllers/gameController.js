@@ -15,7 +15,7 @@ exports.newSingleplayerGame = async (req, res) => {
 
         const newGame = await gameModel.createSingleplayerGame(req.session.user.id);
         req.session.gameId = newGame.id;
-        res.redirect('/game/singleplayer');
+        res.status(200).json({ success: true });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to create game' });

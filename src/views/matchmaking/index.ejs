@@ -36,8 +36,24 @@
 <script>
     function selectMode(mode) {
         if (mode === 'solo') {
-            alert('Solo mód - zatím není implementovaný');
-            // TODO: window.location.href = '/game/solo';
+
+            const params = {};
+            const options = {
+                method: 'POST',
+                body: JSON.stringify( params )  
+            };
+
+            fetch( '/game/singleplayer/new', options )
+                .then( response => response.json() )
+                .then( response => {
+                    if ( response.success ) {
+                        window.location.href = '/game/singleplayer';
+                    } else {
+                        alert('Nepodařilo se vytvořit novou hru. Zkuste to znovu.');
+                    }
+                }
+            );
+
         } else if (mode === 'multi') {
             window.location.href = '/matchmaking/lobby';
         }
