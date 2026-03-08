@@ -1,5 +1,5 @@
 // draw.js
-// -------
+// --------
 // Contains the `drawScene` function which sets up the camera
 // projection, model‑view transforms (including rotation), binds
 // attributes/uniforms and issues the draw call for the cube.
