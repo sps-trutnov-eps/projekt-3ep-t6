@@ -1,6 +1,4 @@
 async function updateGameState(dataFromServer) {
-    console.log(dataFromServer)
-
     const playerId = document.getElementById('player-id').textContent;
     const opponentName = 'Chudý starec';
     const playerScore = dataFromServer.p1_score;
