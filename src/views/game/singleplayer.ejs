@@ -7,7 +7,9 @@
     <div class="game-wrapper">
         <h1><%= message %></h1>
 
-        <div id="game-finished" display:none;>
+        <button class="refresh" onclick="getGameState()">Aktualizovat stav hry</button>
+
+        <div id="game-finished" style="display: none;">
             <form action="/game/singleplayer/new" method="POST" style="margin-bottom: 2rem;">
                 <button type="submit" class="btn-primary">Začít novou hru</button>
             </form>
@@ -18,7 +20,7 @@
             <p>Vaše celkové skóre: <span id="player-score"></span></p>
             <p>Celkové skóre soupeře: <span id="opponent-score"></span></p>
             <p>V tomto kole jste naházeli: <span id="current-roll"></span></p>
-            <button id="roll-dice" class="btn-primary">Hodit kostkami</button>
+            <button id="roll-dice" class="btn-primary" onclick="rollDice()">Hodit kostkami</button>
         </div>
 
         <div class="game-board">

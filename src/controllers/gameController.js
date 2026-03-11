@@ -7,7 +7,7 @@ exports.getSingleplayer = (req, res) => {
     });
 }
 
-exports.newSingleplayerGame = async (req, res) => {
+exports.postNewSingleplayerGame = async (req, res) => {
     try {
         if (!req.session.user) {
             return res.redirect('/auth/login');
@@ -35,3 +35,20 @@ exports.getGameState = async (req, res) => {
         res.status(500).json({ error: 'Failed to get game state' });
     }
 }
+
+exports.postThrowDice = async (req, res) => {
+    if (!req.session.gameId) {
+        return res.status(400).json({ error: 'No active game' });
+    }
+
+    try {
+        const gameState = await gameModel.findById(req.session.gameId);
+        // TODO: simulovat hod kostkou
+        //res.json({ success: true, gameState: updatedGameState });
+        res.json({ success: false, error: 'Not implemented yet' });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: 'Failed to throw dice' });
+    }
+};

@@ -1,5 +1,5 @@
-async function updateGameState() {
-    const dataFromServer = await fetch('/game/state').then(res => res.json());
+async function updateGameState(dataFromServer) {
+    console.log(dataFromServer)
 
     const playerId = document.getElementById('player-id').textContent;
     const opponentName = 'Chudý starec';
@@ -24,4 +24,23 @@ async function updateGameState() {
     }
 }
 
-updateGameState();
+async function rollDice() {
+    await fetch('/game/roll', { 
+        method: 'POST' 
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success === true) {
+            updateGameState(data.gameState);
+        } else {
+            alert('Chyba při házení kostkami: ' + data.error);
+        }
+    });
+}
+
+async function getGameState() {
+    const dataFromServer = await fetch('/game/state').then(res => res.json());
+    updateGameState(dataFromServer);
+}
+
+getGameState();
