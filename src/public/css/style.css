@@ -1,3 +1,15 @@
+:root {
+    --color-brown-dark: #7f3004;
+    --color-brown-mid: #cf763b;
+    --color-gold: #b4901e;
+    --color-olive: #8d8638;
+    --color-stone: #7a665d;
+    --color-parchment: #f5efe8;
+    --color-parchment-dark: #e8ddd0;
+    --color-parchment-border: #c8bdb0;
+    --text-color:#130303;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -7,7 +19,7 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: #ffffff;
-    color: #333;
+    color: #212121;
     min-height: 100vh;
 }
 
@@ -45,28 +57,28 @@ button:hover {
 }
 
 .btn-primary {
-    background: #3498db;
+    background: #cf763b;
     color: white;
 }
 
 .btn-primary:hover {
-    background: #2980b9;
+    background: #7f3004;
 }
 
 .btn-secondary {
-    background: #95a5a6;
+    background: #8d8638;
     color: white;
 }
 
 .btn-secondary:hover {
-    background: #7f8c8d;
+    background: #6b6a2e;
 }
 
 /* nav */
 .navbar {
-    background: #667889;
+    background: #7a665d;
     padding: 15px 0;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 .nav-container {
@@ -101,12 +113,12 @@ button:hover {
 }
 
 .nav-menu li a:hover {
-    color: #6eafda;
+    color: #cf763b;
 }
 
 /* footer */
 .footer {
-    background: #667889;
+    background: #7a665d;
     padding: 20px 10px;
     box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
     position: absolute;
@@ -135,12 +147,12 @@ button:hover {
 .matchmaking-wrapper h1 {
     font-size: 42px;
     margin-bottom: 10px;
-    color: #667889;
+    color: #130303;
 }
 
 .subtitle {
     font-size: 18px;
-    color: #667889;
+    color: #130303;
     margin-bottom: 50px;
 }
 
@@ -163,8 +175,8 @@ button:hover {
 }
 
 .mode-card:hover {
-    border-color: #3498db;
-    box-shadow: 0 5px 20px rgba(52, 152, 219, 0.3);
+    border-color: #cf763b;
+    box-shadow: 0 5px 20px rgba(207,118,59,0.3);
 }
 
 .mode-icon {
@@ -175,12 +187,12 @@ button:hover {
 .mode-card h2 {
     font-size: 28px;
     margin-bottom: 10px;
-    color: #667889;
+    color: #7f3004;
 }
 
 .mode-card p {
     font-size: 16px;
-    color: #667889;
+    color: #130303;
     margin: 0;
 }
 
@@ -195,7 +207,7 @@ button:hover {
 .lobby-wrapper h1 {
     font-size: 42px;
     margin-bottom: 10px;
-    color: #2c3e50;
+    color: #130303;
 }
 
 .lobby-options {
@@ -216,8 +228,8 @@ button:hover {
 }
 
 .lobby-card:hover {
-    border-color: #3498db;
-    box-shadow: 0 5px 20px rgba(52, 152, 219, 0.3);
+    border-color: #cf763b;
+    box-shadow: 0 5px 20px rgba(207,118,59,0.3);
 }
 
 .lobby-card-icon {
@@ -228,19 +240,19 @@ button:hover {
 .lobby-card h2 {
     font-size: 1.3rem;
     margin: 0.25rem 0 0.5rem;
-    color: #667889;
+    color: #7f3004;
 }
 
 .lobby-card p {
     font-size: 0.9rem;
-    color: #667889;
+    color: #130303;
     margin-bottom: 1.25rem;
 }
 
 .lobby-panel {
     margin-top: 2rem;
-    background: #f8f9fa;
-    border: 2px solid #ecf0f1;
+    background: #f5efe8;
+    border: 2px solid #e8ddd0;
     border-radius: 15px;
     padding: 1.5rem;
     max-width: 480px;
@@ -264,7 +276,7 @@ button:hover {
 .panel-header h3 {
     margin: 0;
     font-size: 1.1rem;
-    color: #2c3e50;
+    color: #7f3004;
 }
 
 .btn-close {
@@ -282,21 +294,21 @@ button:hover {
 .panel-label {
     display: block;
     font-size: 0.85rem;
-    color: #667889;
+    color: #130303;
     margin-bottom: 0.5rem;
     text-align: left;
 }
 
 .panel-hint {
     font-size: 0.82rem;
-    color: #95a5a6;
+    color: #8d8638;
     margin-top: 0.5rem;
     text-align: left;
 }
 
 .panel-error {
     font-size: 0.85rem;
-    color: #e74c3c;
+    color: #7f3004;
     margin-top: 0.5rem;
     text-align: left;
 }
@@ -305,8 +317,8 @@ button:hover {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    background: #ecf0f1;
-    border: 2px solid #dde1e7;
+    background: #e8ddd0;
+    border: 2px solid #c8bdb0;
     border-radius: 8px;
     padding: 0.75rem 1rem;
 }
@@ -317,7 +329,7 @@ button:hover {
     letter-spacing: 0.15em;
     flex: 1;
     text-align: center;
-    color: #3498db;
+    color: #cf763b;
 }
 
 .btn-copy {
@@ -337,15 +349,15 @@ button:hover {
     font-family: monospace;
     letter-spacing: 0.2em;
     text-align: center;
-    background: #ecf0f1;
-    border: 2px solid #dde1e7;
+    background: #e8ddd0;
+    border: 2px solid #c8bdb0;
     border-radius: 8px;
-    color: #2c3e50;
+    color: #7f3004;
     outline: none;
     box-sizing: border-box;
     transition: border-color 0.2s;
 }
-.code-input:focus { border-color: #3498db; }
+.code-input:focus { border-color: #cf763b; }
 
 .toggle-label {
     display: flex;
@@ -376,16 +388,16 @@ button:hover {
     border-radius: 50%;
     transition: left 0.2s;
 }
-.toggle-label input:checked + .toggle-slider { background: #3498db; }
+.toggle-label input:checked + .toggle-slider { background: #cf763b; }
 .toggle-label input:checked + .toggle-slider::after { left: 23px; }
 
 /* game */
-
 .game-wrapper {
     max-width: 450px;
     margin: 0;
     padding: 2rem 1rem;
 }
+
 .game-state {
     background: white;
     border: 2px solid #ecf0f1;
@@ -406,6 +418,7 @@ button:hover {
     color: #2c3e50;
     font-weight: bold;
 }
+
 .game-board {
     background: white;
     border: 2px solid #ecf0f1;
