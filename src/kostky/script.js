@@ -96,8 +96,8 @@ const programInfo = {
 // When the image finished loading copy it into the texture.
 //
 function loadTexture(gl, url) {
-  const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
+  const texture = gl.createTexture();
 
   // Because images have to be downloaded over the internet
   // they might take a moment until they are ready.
