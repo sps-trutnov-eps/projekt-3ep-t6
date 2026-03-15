@@ -8,6 +8,7 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: #ffffff;
     color: #333;
+    min-height: 100vh;
 }
 
 a {
@@ -107,8 +108,10 @@ button:hover {
 .footer {
     background: #667889;
     padding: 20px 10px;
-    margin-top: 50px;
     box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+    position: absolute;
+    bottom: 0;
+    width: 100%;
 }
 
 .footer-container {
@@ -377,11 +380,6 @@ button:hover {
 .toggle-label input:checked + .toggle-slider::after { left: 23px; }
 
 /* game */
-.game-wrapper {
-    max-width: 700px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-}
 
 .game-wrapper {
     max-width: 450px;
