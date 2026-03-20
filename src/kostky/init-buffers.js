@@ -1,7 +1,7 @@
 // init-buffers.js
 // ----------------
 // Module responsible for creating all GPU buffers needed to
-time a textured cube.  It exports a single helper `initBuffers`.
+//time a textured cube.  It exports a single helper `initBuffers`.
 // Each sub‑function returns a WebGLBuffer already bound and
 // populated with the appropriate data (positions, texture
 // coordinates, indices).  The caller (main `script.js`) will
@@ -11,9 +11,11 @@ function initBuffers(gl) {
   const positionBuffer = initPositionBuffer(gl);
   const textureCoordBuffer = initTextureBuffer(gl);
   const indexBuffer = initIndexBuffer(gl);
+  const normalBuffer = initNormalBuffer(gl);
 
   return {
     position: positionBuffer,
+    normal: normalBuffer,
     textureCoord: textureCoordBuffer,
     indices: indexBuffer,
   };
@@ -88,17 +90,17 @@ function initTextureBuffer(gl) {
 
   const textureCoordinates = [
     // Front
-    0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+    0.0, 1/3, 1/4, 1/3, 1/4, 2/3, 0.0, 2/3,
     // Back
-    0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+    1/2, 1/3, 3/4, 1/3, 3/4, 2/3, 1/2, 2/3,
     // Top
-    0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+    1/4, 1/3, 1/2, 1/3, 1/2, 2/3, 1/4, 2/3,
     // Bottom
-    0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+    3/4, 1/3, 1.0, 1/3, 1.0, 2/3, 3/4, 2/3,
     // Right
-    0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+    1/4, 0.0, 1/2, 0.0, 1/2, 1/3, 1/4, 1/3,
     // Left
-    0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+    1/4, 2/3, 1/2, 2/3, 1/2, 1, 1/4, 1,
   ];
 
   gl.bufferData(
@@ -137,6 +139,39 @@ function initIndexBuffer(gl) {
   );
 
   return indexBuffer;
+}
+
+function initNormalBuffer(gl) {
+  const normalBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+
+  const vertexNormals = [
+    // Front
+    0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
+
+    // Back
+    0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0,
+
+    // Top
+    0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
+
+    // Bottom
+    0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0,
+
+    // Right
+    1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+
+    // Left
+    -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0,
+  ];
+
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array(vertexNormals),
+    gl.STATIC_DRAW,
+  );
+
+  return normalBuffer;
 }
 
 export { initBuffers };

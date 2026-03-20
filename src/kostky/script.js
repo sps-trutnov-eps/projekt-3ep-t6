@@ -20,26 +20,43 @@ gl.clear(gl.COLOR_BUFFER_BIT);
 
 const vsSource = `
     attribute vec4 aVertexPosition;
+    attribute vec3 aVertexNormal;
     attribute vec2 aTextureCoord;
 
+    uniform mat4 uNormalMatrix;
     uniform mat4 uModelViewMatrix;
     uniform mat4 uProjectionMatrix;
 
     varying highp vec2 vTextureCoord;
+    varying highp vec3 vLighting;
 
     void main(void) {
       gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
       vTextureCoord = aTextureCoord;
+
+      // Apply lighting effect
+
+      highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
+      highp vec3 directionalLightColor = vec3(1, 1, 1);
+      highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));
+
+      highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);
+
+      highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
+      vLighting = ambientLight + (directionalLightColor * directional);
     }
   `;
 
 const fsSource = `
     varying highp vec2 vTextureCoord;
+    varying highp vec3 vLighting;
 
     uniform sampler2D uSampler;
 
     void main(void) {
-      gl_FragColor = texture2D(uSampler, vTextureCoord);
+      highp vec4 texelColor = texture2D(uSampler, vTextureCoord);
+
+      gl_FragColor = vec4(texelColor.rgb * vLighting, texelColor.a);
     }
   `;
 
@@ -81,11 +98,13 @@ const programInfo = {
   program: shaderProgram,
   attribLocations: {
     vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition"),
+    vertexNormal: gl.getAttribLocation(shaderProgram, "aVertexNormal"),
     textureCoord: gl.getAttribLocation(shaderProgram, "aTextureCoord"),
   },
   uniformLocations: {
     projectionMatrix: gl.getUniformLocation(shaderProgram, "uProjectionMatrix"),
     modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
+    normalMatrix: gl.getUniformLocation(shaderProgram, "uNormalMatrix"),
     uSampler: gl.getUniformLocation(shaderProgram, "uSampler"),
   },
 };
@@ -96,8 +115,8 @@ const programInfo = {
 // When the image finished loading copy it into the texture.
 //
 function loadTexture(gl, url) {
-  gl.bindTexture(gl.TEXTURE_2D, texture);
   const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
 
   // Because images have to be downloaded over the internet
   // they might take a moment until they are ready.
@@ -174,13 +193,31 @@ gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 // actual frame rate.
 let then = 0;
 
+const pos = [
+    [-3, 2, -8],
+    [0, 2, -8],
+    [3, 2, -8],
+    [-3, -2, -8],
+    [0, -2, -8],
+    [3, -2, -8],
+  ];
+
+
 // Draw the scene repeatedly
 function render(now) {
   now *= 0.001; // convert to seconds
   deltaTime = now - then;
   then = now;
 
-  drawScene(gl, programInfo, buffers, texture, cubeRotation);
+  gl.clearColor(0.0, 0.0, 0.0, 1.0);
+  gl.clearDepth(1.0);
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthFunc(gl.LEQUAL);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  for(let i=0; i<6; i++){
+  drawScene(gl, programInfo, buffers, texture, cubeRotation, pos[i]);
+  }
   cubeRotation += deltaTime;
 
   requestAnimationFrame(render);
