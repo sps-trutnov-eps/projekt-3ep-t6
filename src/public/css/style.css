@@ -17,7 +17,7 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'MedievalSharp', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: #ffffff;
     color: #212121;
     min-height: 100vh;
@@ -26,6 +26,10 @@ body {
 a {
     text-decoration: none;
     padding: 10px;
+}
+
+h1, h2, h3 {
+    font-family: 'Pirata One', serif;
 }
 
 .container {
@@ -108,7 +112,7 @@ button:hover {
 .nav-menu li a {
     color: #ecf0f1;
     text-decoration: none;
-    font-size: 16px;
+    font-size: 20px;
     transition: color 0.3s;
 }
 
@@ -191,7 +195,7 @@ button:hover {
 }
 
 .mode-card p {
-    font-size: 16px;
+    font-size: 18px;
     color: #130303;
     margin: 0;
 }
@@ -244,7 +248,7 @@ button:hover {
 }
 
 .lobby-card p {
-    font-size: 0.9rem;
+    font-size: 16px;
     color: #130303;
     margin-bottom: 1.25rem;
 }
