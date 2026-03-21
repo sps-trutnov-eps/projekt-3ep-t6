@@ -41,41 +41,65 @@ h1, h2, h3 {
 button {
     padding: 10px 20px;
     background: #cf763b;
-    color: white;
-    border: none;
-    border-radius: 5px;
+    color: #f5efe8;
+    border: 2px solid #b4901e;
+    font-family: 'MedievalSharp', serif;
+    font-size: 16px;
+    text-shadow: 1px 1px 0px #7f3004;
+    box-shadow: 2px 2px 0px #7f3004;
+    border-radius: 4px;
     cursor: pointer;
+    transition: all 0.3s ease;
 }
 
 button:hover {
     background: #7f3004;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
 }
 
-.btn-primary, .btn-secondary {
-    padding: 15px 30px;
-    font-size: 18px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.3s;
+button:active {
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5);
+    transform: translateY(2px);
 }
 
 .btn-primary {
     background: #cf763b;
-    color: white;
+    color: #f5efe8;
+    border: 2px solid #b4901e;
+    font-family: 'MedievalSharp', serif;
+    text-shadow: 1px 1px 0px #7f3004;
+    box-shadow: 2px 2px 0px #7f3004;
+    border-radius: 4px;
 }
 
 .btn-primary:hover {
     background: #7f3004;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+}
+
+.btn-primary:active {
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5);
+    transform: translateY(2px);
 }
 
 .btn-secondary {
     background: #8d8638;
-    color: white;
+    color: #f5efe8;
+    border: 2px solid #b4901e;
+    font-family: 'MedievalSharp', serif;
+    text-shadow: 1px 1px 0px #6b6a2e;
+    box-shadow: 2px 2px 0px #6b6a2e;
+    border-radius: 4px;
 }
 
 .btn-secondary:hover {
     background: #6b6a2e;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+}
+
+.btn-secondary:active {
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5);
+    transform: translateY(2px);
 }
 
 /* nav */
@@ -438,14 +462,24 @@ button:hover {
 
 .refresh {
     background: #8d8638;
-    color: white;
-    border-radius: 6px;
+    color: #f5efe8;
+    border: 2px solid #b4901e;
+    font-family: 'MedievalSharp', serif;
+    text-shadow: 1px 1px 0px #6b6a2e;
+    box-shadow: 2px 2px 0px #6b6a2e;
+    border-radius: 4px;
     margin-bottom: 1rem;
     margin-top: 1rem;
 }
 
 .refresh:hover {
     background: #6b6a2e;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+}
+
+.refresh:active {
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5);
+    transform: translateY(2px);
 }
 
 .mode-card,
