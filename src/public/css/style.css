@@ -40,7 +40,7 @@ h1, h2, h3 {
 
 button {
     padding: 10px 20px;
-    background: #3b7dff;
+    background: #cf763b;
     color: white;
     border: none;
     border-radius: 5px;
@@ -48,7 +48,7 @@ button {
 }
 
 button:hover {
-    background: #5c8ff6;
+    background: #7f3004;
 }
 
 .btn-primary, .btn-secondary {
@@ -169,18 +169,16 @@ button:hover {
 
 .mode-card {
     background: white;
-    border: 2px solid #ecf0f1;
-    border-radius: 15px;
     padding: 40px 30px;
     width: 280px;
     cursor: pointer;
     transition: all 0.3s;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(127,48,4,0.15);
 }
 
 .mode-card:hover {
     border-color: #cf763b;
-    box-shadow: 0 5px 20px rgba(207,118,59,0.3);
+    box-shadow: 0 6px 20px rgba(127,48,4,0.3);
 }
 
 .mode-icon {
@@ -223,17 +221,15 @@ button:hover {
 
 .lobby-card {
     background: white;
-    border: 2px solid #ecf0f1;
-    border-radius: 15px;
     padding: 2rem 1.5rem;
     text-align: center;
     transition: all 0.3s;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(127,48,4,0.15);
 }
 
 .lobby-card:hover {
     border-color: #cf763b;
-    box-shadow: 0 5px 20px rgba(207,118,59,0.3);
+    box-shadow: 0 6px 20px rgba(127,48,4,0.3);
 }
 
 .lobby-card-icon {
@@ -256,13 +252,12 @@ button:hover {
 .lobby-panel {
     margin-top: 2rem;
     background: #f5efe8;
-    border: 2px solid #e8ddd0;
-    border-radius: 15px;
     padding: 1.5rem;
     max-width: 480px;
     margin-left: auto;
     margin-right: auto;
     animation: slideIn 0.2s ease;
+    box-shadow: 0 4px 12px rgba(127,48,4,0.15);
 }
 
 @keyframes slideIn {
@@ -404,13 +399,12 @@ button:hover {
 
 .game-state {
     background: white;
-    border: 2px solid #ecf0f1;
-    border-radius: 15px;
     padding: 1.5rem 2rem;
     margin-bottom: 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    box-shadow: 0 4px 12px rgba(127,48,4,0.15);
 }
 
 .game-state p {
@@ -425,12 +419,11 @@ button:hover {
 
 .game-board {
     background: white;
-    border: 2px solid #ecf0f1;
-    border-radius: 15px;
     padding: 1.5rem 2rem;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    box-shadow: 0 4px 12px rgba(127,48,4,0.15);
 }
 
 .game-board p {
@@ -441,4 +434,33 @@ button:hover {
 .game-board span {
     color: #2c3e50;
     font-weight: bold;
+}
+
+.refresh {
+    background: #8d8638;
+    color: white;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    margin-top: 1rem;
+}
+
+.refresh:hover {
+    background: #6b6a2e;
+}
+
+.mode-card,
+.lobby-card,
+.lobby-panel,
+.game-state,
+.game-board {
+    border-radius: 0;
+    border: 3px solid transparent;
+    border-image: linear-gradient(
+        135deg,
+        #7f3004,
+        #cf763b,
+        #b4901e,
+        #cf763b,
+        #7f3004
+    ) 1;
 }
