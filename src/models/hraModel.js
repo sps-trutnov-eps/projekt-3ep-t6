@@ -15,8 +15,9 @@ class Game {
             winner_id INTEGER REFERENCES users(id),
             p1_score INTEGER DEFAULT 0,
             p2_score INTEGER DEFAULT 0,
-            turn_score INTEGER DEFAULT 0,
+            turn_score INTEGER DEFAULT 0,           
             dice_left INTEGER DEFAULT 6,
+            last_seed INTEGER DEFAULT 10000,  
             status VARCHAR(20) DEFAULT 'ACTIVE',
             last_roll JSONB DEFAULT '[]',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

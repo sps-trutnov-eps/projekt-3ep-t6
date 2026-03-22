@@ -42,10 +42,13 @@ exports.postThrowDice = async (req, res) => {
     }
 
     try {
-        const gameState = await gameModel.findById(req.session.gameId);
-        // TODO: simulovat hod kostkou
-        //res.json({ success: true, gameState: updatedGameState });
-        res.json({ success: false, error: 'Not implemented yet' });
+        let gameState = await gameModel.findById(req.session.gameId);
+
+        gameState.last_seed = randomIntFromInterval(1, 10000);
+
+        await gameModel.updateGameAfterRoll(gameState);
+
+        res.json({ success: true, gameState: gameState });
     }
     catch (err) {
         console.error(err);
