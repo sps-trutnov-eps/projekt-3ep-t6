@@ -31,6 +31,7 @@ class Game {
         `ALTER TABLE games ADD COLUMN IF NOT EXISTS turn_score INTEGER DEFAULT 0`,
         `ALTER TABLE games ADD COLUMN IF NOT EXISTS dice_left INTEGER DEFAULT 6`,
         `ALTER TABLE games ADD COLUMN IF NOT EXISTS last_roll JSONB DEFAULT '[]'`,
+        'ALTER TABLE games ADD COLUMN IF NOT EXISTS last_seed INTEGER DEFAULT 10000',
       ];
 
       for (const sql of migrations) {
@@ -157,8 +158,8 @@ class Game {
     
     static async createSingleplayerGame(playerId) {
         const sql = `
-            INSERT INTO games (player1_id, game_mode, dice_left)
-            VALUES ($1, 'SINGLEPLAYER', 6)
+            INSERT INTO games (player1_id, current_turn_id, game_mode, dice_left)
+            VALUES ($1, $1, 'SINGLEPLAYER', 6)
             RETURNING *;
         `;
         const { rows } = await db.query(sql, [playerId]);
