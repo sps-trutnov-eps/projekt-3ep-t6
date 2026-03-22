@@ -1,3 +1,15 @@
+:root {
+    --color-brown-dark: #7f3004;
+    --color-brown-mid: #cf763b;
+    --color-gold: #b4901e;
+    --color-olive: #8d8638;
+    --color-stone: #7a665d;
+    --color-parchment: #f5efe8;
+    --color-parchment-dark: #e8ddd0;
+    --color-parchment-border: #c8bdb0;
+    --text-color:#130303;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -5,14 +17,19 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'MedievalSharp', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: #ffffff;
-    color: #333;
+    color: #212121;
+    min-height: 100vh;
 }
 
 a {
     text-decoration: none;
     padding: 10px;
+}
+
+h1, h2, h3 {
+    font-family: 'Pirata One', serif;
 }
 
 .container {
@@ -23,49 +40,73 @@ a {
 
 button {
     padding: 10px 20px;
-    background: #3b7dff;
-    color: white;
-    border: none;
-    border-radius: 5px;
+    background: #cf763b;
+    color: #f5efe8;
+    border: 2px solid #b4901e;
+    font-family: 'MedievalSharp', serif;
+    font-size: 16px;
+    text-shadow: 1px 1px 0px #7f3004;
+    box-shadow: 2px 2px 0px #7f3004;
+    border-radius: 4px;
     cursor: pointer;
+    transition: all 0.3s ease;
 }
 
 button:hover {
-    background: #5c8ff6;
+    background: #7f3004;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
 }
 
-.btn-primary, .btn-secondary {
-    padding: 15px 30px;
-    font-size: 18px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.3s;
+button:active {
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5);
+    transform: translateY(2px);
 }
 
 .btn-primary {
-    background: #3498db;
-    color: white;
+    background: #cf763b;
+    color: #f5efe8;
+    border: 2px solid #b4901e;
+    font-family: 'MedievalSharp', serif;
+    text-shadow: 1px 1px 0px #7f3004;
+    box-shadow: 2px 2px 0px #7f3004;
+    border-radius: 4px;
 }
 
 .btn-primary:hover {
-    background: #2980b9;
+    background: #7f3004;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+}
+
+.btn-primary:active {
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5);
+    transform: translateY(2px);
 }
 
 .btn-secondary {
-    background: #95a5a6;
-    color: white;
+    background: #8d8638;
+    color: #f5efe8;
+    border: 2px solid #b4901e;
+    font-family: 'MedievalSharp', serif;
+    text-shadow: 1px 1px 0px #6b6a2e;
+    box-shadow: 2px 2px 0px #6b6a2e;
+    border-radius: 4px;
 }
 
 .btn-secondary:hover {
-    background: #7f8c8d;
+    background: #6b6a2e;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+}
+
+.btn-secondary:active {
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5);
+    transform: translateY(2px);
 }
 
 /* nav */
 .navbar {
-    background: #667889;
+    background: #7a665d;
     padding: 15px 0;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 .nav-container {
@@ -95,20 +136,22 @@ button:hover {
 .nav-menu li a {
     color: #ecf0f1;
     text-decoration: none;
-    font-size: 16px;
+    font-size: 20px;
     transition: color 0.3s;
 }
 
 .nav-menu li a:hover {
-    color: #6eafda;
+    color: #cf763b;
 }
 
 /* footer */
 .footer {
-    background: #667889;
+    background: #7a665d;
     padding: 20px 10px;
-    margin-top: 50px;
     box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+    position: absolute;
+    bottom: 0;
+    width: 100%;
 }
 
 .footer-container {
@@ -132,12 +175,12 @@ button:hover {
 .matchmaking-wrapper h1 {
     font-size: 42px;
     margin-bottom: 10px;
-    color: #667889;
+    color: #130303;
 }
 
 .subtitle {
     font-size: 18px;
-    color: #667889;
+    color: #130303;
     margin-bottom: 50px;
 }
 
@@ -150,18 +193,16 @@ button:hover {
 
 .mode-card {
     background: white;
-    border: 2px solid #ecf0f1;
-    border-radius: 15px;
     padding: 40px 30px;
     width: 280px;
     cursor: pointer;
     transition: all 0.3s;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(127,48,4,0.15);
 }
 
 .mode-card:hover {
-    border-color: #3498db;
-    box-shadow: 0 5px 20px rgba(52, 152, 219, 0.3);
+    border-color: #cf763b;
+    box-shadow: 0 6px 20px rgba(127,48,4,0.3);
 }
 
 .mode-icon {
@@ -172,12 +213,12 @@ button:hover {
 .mode-card h2 {
     font-size: 28px;
     margin-bottom: 10px;
-    color: #667889;
+    color: #7f3004;
 }
 
 .mode-card p {
-    font-size: 16px;
-    color: #667889;
+    font-size: 18px;
+    color: #130303;
     margin: 0;
 }
 
@@ -192,7 +233,7 @@ button:hover {
 .lobby-wrapper h1 {
     font-size: 42px;
     margin-bottom: 10px;
-    color: #2c3e50;
+    color: #130303;
 }
 
 .lobby-options {
@@ -204,17 +245,15 @@ button:hover {
 
 .lobby-card {
     background: white;
-    border: 2px solid #ecf0f1;
-    border-radius: 15px;
     padding: 2rem 1.5rem;
     text-align: center;
     transition: all 0.3s;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(127,48,4,0.15);
 }
 
 .lobby-card:hover {
-    border-color: #3498db;
-    box-shadow: 0 5px 20px rgba(52, 152, 219, 0.3);
+    border-color: #cf763b;
+    box-shadow: 0 6px 20px rgba(127,48,4,0.3);
 }
 
 .lobby-card-icon {
@@ -225,25 +264,24 @@ button:hover {
 .lobby-card h2 {
     font-size: 1.3rem;
     margin: 0.25rem 0 0.5rem;
-    color: #667889;
+    color: #7f3004;
 }
 
 .lobby-card p {
-    font-size: 0.9rem;
-    color: #667889;
+    font-size: 16px;
+    color: #130303;
     margin-bottom: 1.25rem;
 }
 
 .lobby-panel {
     margin-top: 2rem;
-    background: #f8f9fa;
-    border: 2px solid #ecf0f1;
-    border-radius: 15px;
+    background: #f5efe8;
     padding: 1.5rem;
     max-width: 480px;
     margin-left: auto;
     margin-right: auto;
     animation: slideIn 0.2s ease;
+    box-shadow: 0 4px 12px rgba(127,48,4,0.15);
 }
 
 @keyframes slideIn {
@@ -261,7 +299,7 @@ button:hover {
 .panel-header h3 {
     margin: 0;
     font-size: 1.1rem;
-    color: #2c3e50;
+    color: #7f3004;
 }
 
 .btn-close {
@@ -279,21 +317,21 @@ button:hover {
 .panel-label {
     display: block;
     font-size: 0.85rem;
-    color: #667889;
+    color: #130303;
     margin-bottom: 0.5rem;
     text-align: left;
 }
 
 .panel-hint {
     font-size: 0.82rem;
-    color: #95a5a6;
+    color: #8d8638;
     margin-top: 0.5rem;
     text-align: left;
 }
 
 .panel-error {
     font-size: 0.85rem;
-    color: #e74c3c;
+    color: #7f3004;
     margin-top: 0.5rem;
     text-align: left;
 }
@@ -302,8 +340,8 @@ button:hover {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    background: #ecf0f1;
-    border: 2px solid #dde1e7;
+    background: #e8ddd0;
+    border: 2px solid #c8bdb0;
     border-radius: 8px;
     padding: 0.75rem 1rem;
 }
@@ -314,7 +352,7 @@ button:hover {
     letter-spacing: 0.15em;
     flex: 1;
     text-align: center;
-    color: #3498db;
+    color: #cf763b;
 }
 
 .btn-copy {
@@ -334,15 +372,15 @@ button:hover {
     font-family: monospace;
     letter-spacing: 0.2em;
     text-align: center;
-    background: #ecf0f1;
-    border: 2px solid #dde1e7;
+    background: #e8ddd0;
+    border: 2px solid #c8bdb0;
     border-radius: 8px;
-    color: #2c3e50;
+    color: #7f3004;
     outline: none;
     box-sizing: border-box;
     transition: border-color 0.2s;
 }
-.code-input:focus { border-color: #3498db; }
+.code-input:focus { border-color: #cf763b; }
 
 .toggle-label {
     display: flex;
@@ -373,30 +411,24 @@ button:hover {
     border-radius: 50%;
     transition: left 0.2s;
 }
-.toggle-label input:checked + .toggle-slider { background: #3498db; }
+.toggle-label input:checked + .toggle-slider { background: #cf763b; }
 .toggle-label input:checked + .toggle-slider::after { left: 23px; }
 
 /* game */
-.game-wrapper {
-    max-width: 700px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-}
-
 .game-wrapper {
     max-width: 450px;
     margin: 0;
     padding: 2rem 1rem;
 }
+
 .game-state {
     background: white;
-    border: 2px solid #ecf0f1;
-    border-radius: 15px;
     padding: 1.5rem 2rem;
     margin-bottom: 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    box-shadow: 0 4px 12px rgba(127,48,4,0.15);
 }
 
 .game-state p {
@@ -408,14 +440,14 @@ button:hover {
     color: #2c3e50;
     font-weight: bold;
 }
+
 .game-board {
     background: white;
-    border: 2px solid #ecf0f1;
-    border-radius: 15px;
     padding: 1.5rem 2rem;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    box-shadow: 0 4px 12px rgba(127,48,4,0.15);
 }
 
 .game-board p {
@@ -426,4 +458,43 @@ button:hover {
 .game-board span {
     color: #2c3e50;
     font-weight: bold;
+}
+
+.refresh {
+    background: #8d8638;
+    color: #f5efe8;
+    border: 2px solid #b4901e;
+    font-family: 'MedievalSharp', serif;
+    text-shadow: 1px 1px 0px #6b6a2e;
+    box-shadow: 2px 2px 0px #6b6a2e;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    margin-top: 1rem;
+}
+
+.refresh:hover {
+    background: #6b6a2e;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+}
+
+.refresh:active {
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5);
+    transform: translateY(2px);
+}
+
+.mode-card,
+.lobby-card,
+.lobby-panel,
+.game-state,
+.game-board {
+    border-radius: 0;
+    border: 3px solid transparent;
+    border-image: linear-gradient(
+        135deg,
+        #7f3004,
+        #cf763b,
+        #b4901e,
+        #cf763b,
+        #7f3004
+    ) 1;
 }
