@@ -10,6 +10,9 @@ function loop(DicePos)
   DicePos.forEach(dice => {
     dice[2]-=0.1;
   });
+
+  
+
   //loop over dice
   //apply downward velocity
   //clamp it

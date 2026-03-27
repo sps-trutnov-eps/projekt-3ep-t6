@@ -206,6 +206,7 @@ const pos = [
   ];
 
 
+
 // Draw the scene
 function render(now) {
   now *= 0.001; // convert to seconds
@@ -225,7 +226,6 @@ function render(now) {
   drawScene(gl, programInfo, buffers, texture, cubeRotation, pos[i]);
   }
 
-  // Draw table (no rotation, positioned below dice)
   drawScene(gl, programInfo, tableBuffers, tableTexture, 0, [0, -4, -8]);
 
   cubeRotation += deltaTime;

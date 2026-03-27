@@ -38,6 +38,10 @@ function drawScene(gl, programInfo, buffers, texture, cubeRotation, pos) {
     [pos[0],pos[1],pos[2]], // amount to translate
   );
 
+
+  //ROTACE PASS OWN VALUES HERE
+  //a jeste per dice lol
+
   mat4.rotate(
   modelViewMatrix, // destination matrix
   modelViewMatrix, // matrix to rotate
