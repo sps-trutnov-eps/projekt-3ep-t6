@@ -6,8 +6,9 @@
   texture, and then starts the render loop.  The global variables
   `cubeRotation`, `deltaTime`, and `then` manage animation timing.
 */
-import { initBuffers } from "./init-buffers.js";
+import { initBuffers, initTableBuffers } from "./init-buffers.js";
 import { drawScene } from "./draw.js";
+import { loop } from "./physics.js"
 
 const cnv = document.getElementById("cnv");
 var gl = cnv.getContext("webgl");
@@ -182,9 +183,11 @@ function isPowerOf2(value) {
 // Here's where we call the routine that builds all the
 // objects we'll be drawing.
 const buffers = initBuffers(gl);
+const tableBuffers = initTableBuffers(gl);
 
 // Load texture
 const texture = loadTexture(gl, "cubetexture.png");
+const tableTexture = loadTexture(gl, "WoodTexture.jpg");
 // Flip image pixels into the bottom-to-top order that WebGL expects.
 gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
@@ -203,7 +206,7 @@ const pos = [
   ];
 
 
-// Draw the scene repeatedly
+// Draw the scene
 function render(now) {
   now *= 0.001; // convert to seconds
   deltaTime = now - then;
@@ -215,9 +218,16 @@ function render(now) {
   gl.depthFunc(gl.LEQUAL);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+  //fyzika
+  loop(pos)
+
   for(let i=0; i<6; i++){
   drawScene(gl, programInfo, buffers, texture, cubeRotation, pos[i]);
   }
+
+  // Draw table (no rotation, positioned below dice)
+  drawScene(gl, programInfo, tableBuffers, tableTexture, 0, [0, -4, -8]);
+
   cubeRotation += deltaTime;
 
   requestAnimationFrame(render);

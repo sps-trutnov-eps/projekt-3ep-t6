@@ -19,7 +19,7 @@ function drawScene(gl, programInfo, buffers, texture, cubeRotation, pos) {
   const fieldOfView = (45 * Math.PI) / 180; // in radians
   const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
   const zNear = 0.1;
-  const zFar = 100.0;
+  const zFar = 1000000000000.0;
   const projectionMatrix = mat4.create();
 
   // note: glMatrix always has the first argument
@@ -106,7 +106,7 @@ function drawScene(gl, programInfo, buffers, texture, cubeRotation, pos) {
   gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
 
   {
-    const vertexCount = 36;
+    const vertexCount = buffers.vertexCount || 36;
     const type = gl.UNSIGNED_SHORT;
     const offset = 0;
     gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);

@@ -1,11 +1,4 @@
 // init-buffers.js
-// ----------------
-// Module responsible for creating all GPU buffers needed to
-//time a textured cube.  It exports a single helper `initBuffers`.
-// Each sub‑function returns a WebGLBuffer already bound and
-// populated with the appropriate data (positions, texture
-// coordinates, indices).  The caller (main `script.js`) will
-// later supply these buffers when drawing.
 
 function initBuffers(gl) {
   const positionBuffer = initPositionBuffer(gl);
@@ -20,6 +13,7 @@ function initBuffers(gl) {
     indices: indexBuffer,
   };
 }
+
 
 function initPositionBuffer(gl) {
   // Create a buffer for the square's positions.
@@ -174,4 +168,51 @@ function initNormalBuffer(gl) {
   return normalBuffer;
 }
 
-export { initBuffers };
+function initTableBuffers(gl) {
+  const positionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+  // Flat quad in the XYZ plane, 12 wide x 8 deep
+  const positions = [
+    -10.0, 0.0, -4000000.0,
+     10.0, 0.0, -4000000.0,
+     10.0, 0.0,  4.0,
+    -10.0, 0.0,  4.0,
+  ];
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+  const normalBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+  const normals = [
+    0.0, 1.0, 0.0,
+    0.0, 1.0, 0.0,
+    0.0, 1.0, 0.0,
+    0.0, 1.0, 0.0,
+  ];
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+
+  const textureCoordBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
+  const textureCoords = [
+    0.0, 0.0,
+    1.0, 0.0,
+    1.0, 1.0,
+    0.0, 1.0,
+  ];
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+
+  const indexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+  const indices = [0, 1, 2, 0, 2, 3];
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+
+  return {
+    position: positionBuffer,
+    normal: normalBuffer,
+    textureCoord: textureCoordBuffer,
+    indices: indexBuffer,
+    vertexCount: 6,
+  };
+}
+
+export { initBuffers, initTableBuffers };
