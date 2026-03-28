@@ -60,6 +60,17 @@ class Game {
         const { rows } = await db.query('SELECT * FROM games WHERE id = $1', [gameId]);
         return rows[0];
     }
+    // Uloží výsledek hodu do last_roll bez změny turn_score nebo dice_left
+    static async saveRoll(gameId, rollValues) {
+        const sql = `
+            UPDATE games
+            SET last_roll = $2
+            WHERE id = $1
+            RETURNING *;
+        `;
+        const { rows } = await db.query(sql, [gameId, JSON.stringify(rollValues)]);
+        return rows[0];
+    }
 
     /**
      * Aktualizuje stav v rámci tahu hráče (po hodu kostkami)
