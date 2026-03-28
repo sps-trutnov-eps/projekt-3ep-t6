@@ -607,3 +607,14 @@ button:active {
     color: #7f3004;
     margin-bottom: 1rem;
 }
+
+.home-intro {
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    color: #130303;
+    line-height: 1.6;
+}
