@@ -19,11 +19,11 @@
                 <li><a href="/kostky/index.html">Kostky</a></li>
 
                 <% if (user) { %> 
-                    <li>
-                        <form method="post" action="/auth/logout">
-                            <input type=submit value="Odhlásit">
-                        </form>
-                    </li>
+                <li>
+                    <form method="post" action="/auth/logout" style="margin: 0; padding: 0; display: flex; align-items: center;">
+                        <button type="submit" style="all: unset; cursor: pointer; color: #ecf0f1; font-size: 20px; padding: 10px; transition: color 0.3s;">Odhlásit</button>
+                    </form>
+                </li>
                 <% } else { %>
                     <li><a href="/auth/login">Přihlásit se</a></li>
                     <li><a href="/auth/register">Registrace</a></li>

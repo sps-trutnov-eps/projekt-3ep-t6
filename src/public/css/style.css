@@ -132,6 +132,10 @@ button:active {
     margin: 0;
     padding: 0;
 }
+.nav-menu li {
+    display: flex;
+    align-items: center;
+}
 
 .nav-menu li a {
     color: #ecf0f1;
@@ -149,9 +153,9 @@ button:active {
     background: #7a665d;
     padding: 20px 10px;
     box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-    position: absolute;
-    bottom: 0;
     width: 100%;
+    position: sticky;
+    top: 100vh;
 }
 
 .footer-container {
