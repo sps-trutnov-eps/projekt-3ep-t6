@@ -41,12 +41,14 @@ app.use('/game', gameRoutes);
 const User = require('./models/userModel');
 const Game = require('./models/hraModel');
 const Room = require('./models/roomModel');
+const Friend = require('./models/friendModel');
 
 const initDb = async () => {
   try {
     await User.createTable();
     await Game.createTable();
     await Room.createTable();
+    await Friend.createTable();
     console.log('Database tables initialized');
   } catch (err) {
     console.error('Error initializing database:', err);

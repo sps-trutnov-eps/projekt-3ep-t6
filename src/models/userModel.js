@@ -19,7 +19,6 @@ class User {
           END
         ) STORED,
         win_streak INTEGER DEFAULT 0,
-        friends JSONB DEFAULT '[]',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
@@ -29,6 +28,7 @@ class User {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(50) UNIQUE;
       ALTER TABLE users DROP COLUMN IF EXISTS first_name;
       ALTER TABLE users DROP COLUMN IF EXISTS last_name;  
+      ALTER TABLE users DROP COLUMN IF EXISTS friends;
     `);
   }
 
@@ -85,24 +85,6 @@ class User {
       RETURNING *;
     `;
     const { rows } = await db.query(sql, [wins, losses, win_streak, id]);
-    return rows[0];
-  }
-
-  /**
-   * Přidá přítele (přidá ID do JSONB pole)
-   * self-explanatory?
-   */
-  static async addFriend(userId, friendId) {
-    const sql = `
-      UPDATE users 
-      SET friends = friends || $2::jsonb 
-      WHERE id = $1 
-      AND NOT (friends @> $2::jsonb)
-      RETURNING *;
-    `;
-    // $2::jsonb očekává např. '[5]'
-    //nemuzes tomu poslat samotne cislo, ale 'pole', protoze je to list pratelId a JSONB to tak ocekava
-    const { rows } = await db.query(sql, [userId, JSON.stringify([friendId])]);
     return rows[0];
   }
 }
