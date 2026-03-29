@@ -15,6 +15,9 @@
             </div>
             <ul class="nav-menu">
                 <li><a href="/">Domů</a></li>
+                <% if (user) { %>
+                <li><a href="/friends">Přátelé</a></li>
+                <% } %>
                 <li><a href="/matchmaking">Matchmaking</a></li>
                 <li><a href="/kostky/index.html">Kostky</a></li>
 

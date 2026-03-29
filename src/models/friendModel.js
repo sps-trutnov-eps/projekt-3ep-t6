@@ -93,6 +93,19 @@ class Friend {
     const { rows } = await db.query(sql, [userId]);
     return rows;
   }
+
+  /**
+   * Zkontrolovat stav přátelství
+   */
+  static async getFriendshipStatus(userId, friendId) {
+    const sql = `
+      SELECT * FROM friendships
+      WHERE (user_id = $1 AND friend_id = $2)
+      OR (user_id = $2 AND friend_id = $1);
+    `;
+    const { rows } = await db.query(sql, [userId, friendId]);
+    return rows[0];
+  }
 }
 
 module.exports = Friend;
