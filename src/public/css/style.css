@@ -490,6 +490,7 @@ button:active {
         #cf763b,
         #7f3004
     ) 1;
+    padding: 1rem;
 }
 
 /* kostky*/
@@ -622,3 +623,51 @@ button:active {
     color: #130303;
     line-height: 1.6;
 }
+
+/* friends */
+
+.friends-alert {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+    border: 3px solid transparent;
+    border-image: linear-gradient(135deg, #7f3004, #cf763b, #b4901e, #cf763b, #7f3004) 1;
+}
+
+.friends-alert-error   { color: #7f3004; background: #fdf0ea; }
+.friends-alert-success { color: #8d8638; background: #f5f4e8; }
+
+.friends-add-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.friends-request-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e8ddd0;
+}
+
+.friends-request-row:last-child { border-bottom: none; }
+
+.friends-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.friends-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e8ddd0;
+}
+
+.friends-row:last-child { border-bottom: none; }
+
+.friends-name  { flex: 1; font-size: 1rem; }
+.friends-stats { color: #7a665d; font-size: 0.9rem; min-width: 80px; text-align: center; }

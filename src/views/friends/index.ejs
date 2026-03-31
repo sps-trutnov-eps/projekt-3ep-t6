@@ -1,93 +1,75 @@
 <%- include('../partials/header') %>
 
-<div class="container" style="max-width: 800px; margin: 40px auto; padding: 20px; background: rgba(0,0,0,0.8); border-radius: 15px; color: white;">
-    <h1>Moje Přátelé</h1>
+<div class="container">
+    <div class="game-wrapper">
+        <h1>Přátelé</h1>
 
-    <% if (error) { %>
-        <div style="background: #e74c3c; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
-            <%= error %>
-        </div>
-    <% } %>
-
-    <% if (success) { %>
-        <div style="background: #2ecc71; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
-            <%= success %>
-        </div>
-    <% } %>
-
-    <section style="margin-bottom: 40px;">
-        <h2>Přidat přítele</h2>
-        <form action="/friends/request" method="POST" style="display: flex; gap: 10px;">
-            <input type="text" name="username" placeholder="Uživatelské jméno" required 
-                   style="flex-grow: 1; padding: 10px; border-radius: 5px; border: none;">
-            <button type="submit" class="btn" style="padding: 10px 20px; background: #3498db; border: none; border-radius: 5px; color: white; cursor: pointer;">
-                Odeslat žádost
-            </button>
-        </form>
-    </section>
-
-    <% if (pendingRequests && pendingRequests.length > 0) { %>
-    <section style="margin-bottom: 40px;">
-        <h2>Čekající žádosti</h2>
-        <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="border-bottom: 1px solid #555;">
-                    <th style="text-align: left; padding: 10px;">Jméno</th>
-                    <th style="text-align: right; padding: 10px;">Akce</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% pendingRequests.forEach(request => { %>
-                <tr style="border-bottom: 1px solid #333;">
-                    <td style="padding: 10px;"><%= request.username %></td>
-                    <td style="text-align: right; padding: 10px;">
-                        <form action="/friends/accept" method="POST" style="display: inline;">
-                            <input type="hidden" name="friendId" value="<%= request.id %>">
-                            <button type="submit" class="btn" style="background: #2ecc71; border: none; padding: 5px 15px; border-radius: 3px; cursor: pointer;">Přijmout</button>
-                        </form>
-                        <form action="/friends/remove" method="POST" style="display: inline;">
-                            <input type="hidden" name="friendId" value="<%= request.id %>">
-                            <button type="submit" class="btn" style="background: #e74c3c; border: none; padding: 5px 15px; border-radius: 3px; cursor: pointer;">Odmítnout</button>
-                        </form>
-                    </td>
-                </tr>
-                <% }) %>
-            </tbody>
-        </table>
-    </section>
-    <% } %>
-
-    <section>
-        <h2>Seznam přátel</h2>
-        <% if (friends && friends.length > 0) { %>
-        <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="border-bottom: 1px solid #555;">
-                    <th style="text-align: left; padding: 10px;">Jméno</th>
-                    <th style="text-align: center; padding: 10px;">Statistiky (V/P)</th>
-                    <th style="text-align: right; padding: 10px;">Akce</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% friends.forEach(friend => { %>
-                <tr style="border-bottom: 1px solid #333;">
-                    <td style="padding: 10px;"><%= friend.username %></td>
-                    <td style="text-align: center; padding: 10px;"><%= friend.wins %> / <%= friend.losses %></td>
-                    <td style="text-align: right; padding: 10px;">
-                        <form action="/friends/remove" method="POST" style="display: inline;">
-                            <input type="hidden" name="friendId" value="<%= friend.id %>">
-                            <button type="submit" class="btn" style="background: #e74c3c; border: none; padding: 5px 15px; border-radius: 3px; cursor: pointer;" 
-                                    onclick="return confirm('Opravdu chcete odebrat přítele?')">Odebrat</button>
-                        </form>
-                    </td>
-                </tr>
-                <% }) %>
-            </tbody>
-        </table>
-        <% } else { %>
-            <p>Zatím nemáte žádné přátele.</p>
+        <% if (error) { %>
+            <div class="friends-alert friends-alert-error"><%= error %></div>
         <% } %>
-    </section>
+        <% if (success) { %>
+            <div class="friends-alert friends-alert-success"><%= success %></div>
+        <% } %>
+
+        <div class="game-layout">
+
+            <!-- Levý sloupec: přidat přítele + čekající žádosti -->
+            <div class="game-left">
+
+                <div class="game-state">
+                    <h2>Přidat přítele</h2>
+                    <form action="/friends/request" method="POST" class="friends-add-form">
+                        <input type="text" name="username" placeholder="Uživatelské jméno" required class="code-input" style="font-size: 1rem; letter-spacing: 0;">
+                        <button type="submit" class="btn-primary">Odeslat žádost</button>
+                    </form>
+                </div>
+
+                <% if (pendingRequests && pendingRequests.length > 0) { %>
+                <div class="game-board">
+                    <h2>Čekající žádosti</h2>
+                    <% pendingRequests.forEach(request => { %>
+                    <div class="friends-request-row">
+                        <span><%= request.username %></span>
+                        <div class="friends-actions">
+                            <form action="/friends/accept" method="POST" style="display:inline;">
+                                <input type="hidden" name="friendId" value="<%= request.id %>">
+                                <button type="submit" class="btn-primary">Přijmout</button>
+                            </form>
+                            <form action="/friends/remove" method="POST" style="display:inline;">
+                                <input type="hidden" name="friendId" value="<%= request.id %>">
+                                <button type="submit" class="btn-secondary">Odmítnout</button>
+                            </form>
+                        </div>
+                    </div>
+                    <% }) %>
+                </div>
+                <% } %>
+
+            </div>
+
+            <!-- Pravý sloupec: seznam přátel -->
+            <div class="game-right">
+                <div class="game-board">
+                    <h2>Seznam přátel</h2>
+                    <% if (friends && friends.length > 0) { %>
+                        <% friends.forEach(friend => { %>
+                        <div class="friends-row">
+                            <span class="friends-name"><%= friend.username %></span>
+                            <span class="friends-stats"><%= friend.wins %> V / <%= friend.losses %> P</span>
+                            <form action="/friends/remove" method="POST" style="display:inline;">
+                                <input type="hidden" name="friendId" value="<%= friend.id %>">
+                                <button type="submit" class="btn-secondary" onclick="return confirm('Opravdu chcete odebrat přítele?')">Odebrat</button>
+                            </form>
+                        </div>
+                        <% }) %>
+                    <% } else { %>
+                        <p>Zatím nemáte žádné přátele.</p>
+                    <% } %>
+                </div>
+            </div>
+
+        </div>
+    </div>
 </div>
 
 <%- include('../partials/footer') %>
