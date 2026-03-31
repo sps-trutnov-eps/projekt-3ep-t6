@@ -87,6 +87,16 @@ class User {
     const { rows } = await db.query(sql, [wins, losses, win_streak, id]);
     return rows[0];
   }
+  
+  static async getTopPlayers() {
+    const { rows } = await db.query(`
+        SELECT username, wins, losses, wl_ratio, win_streak
+        FROM users
+        ORDER BY wins DESC
+        LIMIT 20
+    `);
+    return rows;
+}
 }
 
 module.exports = User;

@@ -671,3 +671,45 @@ button:active {
 
 .friends-name  { flex: 1; font-size: 1rem; }
 .friends-stats { color: #7a665d; font-size: 0.9rem; min-width: 80px; text-align: center; }
+
+/* stats */
+.stats-table {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.stats-header,
+.stats-row {
+    display: grid;
+    grid-template-columns: 40px 1fr 80px 80px 60px 80px;
+    padding: 0.6rem 0.5rem;
+    align-items: center;
+    font-size: 0.95rem;
+}
+
+.stats-header {
+    font-weight: bold;
+    color: #7f3004;
+    border-bottom: 2px solid #c8bdb0;
+    font-size: 0.85rem;
+}
+
+.stats-row {
+    border-bottom: 1px solid #e8ddd0;
+    transition: background 0.15s;
+}
+
+.stats-row:hover { background: #fdf5ee; }
+.stats-row:last-child { border-bottom: none; }
+
+.stats-gold   { background: #fdf8e8; }
+.stats-silver { background: #f5f5f5; }
+.stats-bronze { background: #fdf0e8; }
+
+.stats-wins   { color: #8d8638; font-weight: bold; text-align: center; }
+.stats-losses { color: #7f3004; text-align: center; }
+.stats-ratio  { text-align: center; }
+.stats-streak { text-align: center; }
+.stats-rank   { color: #7a665d; font-weight: bold; }

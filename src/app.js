@@ -32,12 +32,14 @@ const matchmakingRoutes = require('./routes/matchmakingRoutes');
 const authRoutes = require("./routes/authRoutes");
 const gameRoutes = require("./routes/gameRoutes");
 const friendRoutes = require("./routes/friendRoutes");
+const statsRoutes = require('./routes/statsRoutes');
 
 app.use('/', homeRoutes);
 app.use('/matchmaking', matchmakingRoutes);
 app.use('/auth', authRoutes);
 app.use('/game', gameRoutes);
 app.use('/friends', friendRoutes);
+app.use('/stats', statsRoutes);
 
 // Databaze
 const User = require('./models/userModel');
