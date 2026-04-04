@@ -87,6 +87,13 @@
                     </label>
                     <p class="panel-hint">Místnost je <strong id="visibility-status">privátní</strong> – vidí ji jen lidé s kódem.</p>
 
+                    <div id="invite-friends-section" style="margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem;">
+                        <p class="panel-label">Pozvat přátele:</p>
+                        <div id="friends-list-invite" class="friends-list-mini">
+                            <p class="panel-hint">Načítám přátele...</p>
+                        </div>
+                    </div>
+
                     <button class="btn-primary" style="margin-top:1rem; width:100%;" onclick="alert('Spuštění hry – zatím není implementováno')">
                         Spustit hru
                     </button>
@@ -167,7 +174,104 @@
     </div>
 </div>
 
+<style>
+    .friends-list-mini {
+        max-height: 200px;
+        overflow-y: auto;
+        margin-bottom: 1rem;
+    }
+    .friend-invite-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .friend-invite-item:last-child {
+        border-bottom: none;
+    }
+    .friend-name {
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    .btn-invite-sm {
+        padding: 4px 10px;
+        font-size: 0.8rem;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .btn-invite-sm:disabled {
+        background-color: #bdc3c7;
+        cursor: default;
+    }
+</style>
+
 <script>
+    async function loadFriendsForInvite() {
+        const list = document.getElementById('friends-list-invite');
+        try {
+            const res = await fetch('/matchmaking/friends');
+            const data = await res.json();
+
+            if (!data.success) {
+                list.innerHTML = `<p class="panel-hint">${data.error || 'Chyba při načítání'}</p>`;
+                return;
+            }
+
+            if (data.friends.length === 0) {
+                list.innerHTML = `<p class="panel-hint">Nemáš žádné přátele k pozvání.</p>`;
+                return;
+            }
+
+            list.innerHTML = '';
+            data.friends.forEach(friend => {
+                const item = document.createElement('div');
+                item.className = 'friend-invite-item';
+                item.innerHTML = `
+                    <span class="friend-name">${friend.username}</span>
+                    <button class="btn-invite-sm" onclick="sendInvite(${friend.id}, this)">Pozvat</button>
+                `;
+                list.appendChild(item);
+            });
+        } catch (err) {
+            list.innerHTML = `<p class="panel-hint">Chyba spojení</p>`;
+        }
+    }
+
+    async function sendInvite(friendId, btn) {
+        if (!window._currentRoomId) return;
+        
+        btn.disabled = true;
+        btn.textContent = 'Odesílám...';
+
+        try {
+            const res = await fetch('/matchmaking/invite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ friendId, roomId: window._currentRoomId })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                btn.textContent = 'Pozváno';
+                btn.style.backgroundColor = '#27ae60';
+            } else {
+                btn.textContent = 'Chyba';
+                btn.disabled = false;
+                setTimeout(() => {
+                    btn.textContent = 'Pozvat';
+                    btn.style.backgroundColor = '#3498db';
+                }, 2000);
+            }
+        } catch (err) {
+            btn.textContent = 'Chyba';
+            btn.disabled = false;
+        }
+    }
+
     function showPanel(type) {
         closePanel(false);
         const el = document.getElementById('panel-' + type);
@@ -204,6 +308,7 @@
         document.getElementById('room-code-text').textContent = data.room.code;
         document.getElementById('create-loading').style.display = 'none';
         document.getElementById('create-result').style.display = 'block';
+        loadFriendsForInvite();
     } catch (err) {
         alert('Chyba spojení se serverem');
         resetCreatePanel();

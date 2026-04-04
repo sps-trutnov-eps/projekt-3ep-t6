@@ -10,4 +10,7 @@ router.get('/room/:code', matchmakingController.getRoomByCode);
 router.post('/join/:code', matchmakingController.joinRoom);
 router.post('/public', matchmakingController.findPublicRoom);
 
+router.get('/friends', matchmakingController.getFriendsForInvite);
+router.post('/invite', matchmakingController.sendInvite);
+
 module.exports = router;

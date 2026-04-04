@@ -1,4 +1,6 @@
 const Room = require('../models/roomModel');
+const Friend = require('../models/friendModel');
+const Invitation = require('../models/invitationModel');
 
 exports.getMatchmakingPage = (req, res) => {
   res.render('matchmaking/index', {
@@ -130,4 +132,37 @@ exports.findPublicRoom = async (req, res) => {
     console.error('findPublicRoom error:', err);
     res.status(500).json({ error: 'Chyba serveru' });
   }
+};
+
+exports.getFriendsForInvite = async (req, res) => {
+    try {
+        if (!req.session.user) {
+            return res.status(401).json({ error: 'Nejsi přihlášen' });
+        }
+        const friends = await Friend.getFriends(req.session.user.id);
+        res.json({ success: true, friends });
+    } catch (err) {
+        console.error('getFriendsForInvite error:', err);
+        res.status(500).json({ error: 'Chyba serveru při načítání přátel' });
+    }
+};
+
+exports.sendInvite = async (req, res) => {
+    try {
+        if (!req.session.user) {
+            return res.status(401).json({ error: 'Nejsi přihlášen' });
+        }
+        const { friendId, roomId } = req.body;
+        
+        const invitation = await Invitation.create(req.session.user.id, friendId, roomId);
+        
+        if (!invitation) {
+            return res.status(400).json({ error: 'Pozvánka již byla odeslána' });
+        }
+        
+        res.json({ success: true });
+    } catch (err) {
+        console.error('sendInvite error:', err);
+        res.status(500).json({ error: 'Chyba serveru při odesílání pozvánky' });
+    }
 };

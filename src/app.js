@@ -46,6 +46,7 @@ const User = require('./models/userModel');
 const Game = require('./models/hraModel');
 const Room = require('./models/roomModel');
 const Friend = require('./models/friendModel');
+const Invitation = require('./models/invitationModel');
 
 const initDb = async () => {
   try {
@@ -53,6 +54,7 @@ const initDb = async () => {
     await Game.createTable();
     await Room.createTable();
     await Friend.createTable();
+    await Invitation.createTable();
     console.log('Database tables initialized');
   } catch (err) {
     console.error('Error initializing database:', err);
