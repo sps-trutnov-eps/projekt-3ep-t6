@@ -51,9 +51,14 @@ exports.postThrowDice = async (req, res) => {
         const pointsThisRoll = scoreEngine.checkCurrentScore(roll);
 
         if (pointsThisRoll === 0) {
-            const updatedGame = await gameModel.bust(
+            let updatedGame = await gameModel.bust(
                 gameState.id, gameState.player1_id, roll
             );
+
+            if (gameState.game_mode === 'SINGLEPLAYER') {
+                updatedGame = await singleplayerNpcPoints(updatedGame);
+            }
+
             return res.json({ success: true, bust: true, gameState: updatedGame });
         }
 
@@ -141,13 +146,17 @@ exports.postBankPoints = async (req, res) => {
         const WIN_SCORE = 10000;
         const newTotal  = gameState.p1_score + gameState.turn_score;
 
-        const updatedGame = await gameModel.bankPoints(
+        let updatedGame = await gameModel.bankPoints(
             gameState.id, gameState.player1_id, gameState.player1_id
         );
 
         if (newTotal >= WIN_SCORE) {
             const finishedGame = await gameModel.finishGame(gameState.id, gameState.player1_id);
             return res.json({ success: true, gameState: finishedGame });
+        }
+
+        if (gameState.game_mode === 'SINGLEPLAYER') {
+            updatedGame = await singleplayerNpcPoints(updatedGame);
         }
 
         res.json({ success: true, gameState: updatedGame });
@@ -157,3 +166,20 @@ exports.postBankPoints = async (req, res) => {
         res.status(500).json({ success: false, error: 'Failed to bank points' });
     }
 };
+
+async function singleplayerNpcPoints(gameState) {
+    if (gameState.game_mode !== 'SINGLEPLAYER') return gameState;
+
+    // Chudý stařec hraje opatrně: hodí jednou a pokud má body, bankuje.
+    const seed = randomIntFromInterval(1, 10000);
+    const roll = roller.rollDice(seed, 6);
+    const points = scoreEngine.checkCurrentScore(roll);
+    
+    let updatedGame = await gameModel.bankNpcPoints(gameState.id, points);
+    
+    if (updatedGame.p2_score >= 10000) {
+        updatedGame = await gameModel.finishGame(updatedGame.id, null);
+    }
+    
+    return updatedGame;
+}

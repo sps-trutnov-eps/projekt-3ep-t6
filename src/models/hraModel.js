@@ -176,6 +176,24 @@ class Game {
         const { rows } = await db.query(sql, [playerId]);
         return rows[0];
     }
+
+    /**
+     * Bank NPC points in singleplayer mode
+     */
+    static async bankNpcPoints(gameId, points) {
+        const sql = `
+            UPDATE games
+            SET 
+                p2_score = p2_score + $2,
+                turn_score = 0,
+                dice_left = 6,
+                current_turn_id = player1_id
+            WHERE id = $1
+            RETURNING *;
+        `;
+        const { rows } = await db.query(sql, [gameId, points]);
+        return rows[0];
+    }
 }
 
 

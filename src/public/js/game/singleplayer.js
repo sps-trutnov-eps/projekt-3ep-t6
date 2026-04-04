@@ -91,15 +91,23 @@ function updateSelectionScore() {
 //  Aktualizace stavu hry
 function updateGameState(gameState) {
     document.getElementById('player-score').textContent    = gameState.p1_score   ?? 0;
+    document.getElementById('opponent-score').textContent  = gameState.p2_score   ?? 0;
     document.getElementById('turn-score').textContent      = gameState.turn_score  ?? 0;
     document.getElementById('dice-left-count').textContent = gameState.dice_left   ?? 6;
 
     if (gameState.status === 'FINISHED') {
-        showFinished();
+        showFinished(gameState);
     }
 }
 
-function showFinished() {
+function showFinished(gameState) {
+    const banner = document.querySelector('.finished-banner p');
+    if (gameState.winner_id === null && gameState.p2_score >= 10000) {
+        banner.textContent = '💀 Prohráli jste! Stařec byl lepší.';
+    } else if (gameState.winner_id == document.getElementById('player-id').textContent) {
+        banner.textContent = '🏆 Vyhráli jste! Gratulujeme!';
+    }
+    
     document.getElementById('game-finished').style.display = 'block';
     document.getElementById('action-area').style.display   = 'none';
     document.getElementById('dice-area').innerHTML = '';
