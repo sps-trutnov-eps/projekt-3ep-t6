@@ -11,4 +11,7 @@ router.get('/state', gameController.getGameState);
 // ajax endpoint pro hod kostkami
 router.post('/roll', gameController.postThrowDice); 
 
+router.post('/select', gameController.postSelectDice);
+router.post('/bank', gameController.postBankPoints);
+
 module.exports = router;

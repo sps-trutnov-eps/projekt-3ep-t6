@@ -1,0 +1,75 @@
+<%- include('../partials/header') %>
+
+<div class="container">
+    <div class="game-wrapper">
+        <h1>Přátelé</h1>
+
+        <% if (error) { %>
+            <div class="friends-alert friends-alert-error"><%= error %></div>
+        <% } %>
+        <% if (success) { %>
+            <div class="friends-alert friends-alert-success"><%= success %></div>
+        <% } %>
+
+        <div class="game-layout">
+
+            <!-- Levý sloupec: přidat přítele + čekající žádosti -->
+            <div class="game-left">
+
+                <div class="game-state">
+                    <h2>Přidat přítele</h2>
+                    <form action="/friends/request" method="POST" class="friends-add-form">
+                        <input type="text" name="username" placeholder="Uživatelské jméno" required class="code-input" style="font-size: 1rem; letter-spacing: 0;">
+                        <button type="submit" class="btn-primary">Odeslat žádost</button>
+                    </form>
+                </div>
+
+                <% if (pendingRequests && pendingRequests.length > 0) { %>
+                <div class="game-board">
+                    <h2>Čekající žádosti</h2>
+                    <% pendingRequests.forEach(request => { %>
+                    <div class="friends-request-row">
+                        <span><%= request.username %></span>
+                        <div class="friends-actions">
+                            <form action="/friends/accept" method="POST" style="display:inline;">
+                                <input type="hidden" name="friendId" value="<%= request.id %>">
+                                <button type="submit" class="btn-primary">Přijmout</button>
+                            </form>
+                            <form action="/friends/remove" method="POST" style="display:inline;">
+                                <input type="hidden" name="friendId" value="<%= request.id %>">
+                                <button type="submit" class="btn-secondary">Odmítnout</button>
+                            </form>
+                        </div>
+                    </div>
+                    <% }) %>
+                </div>
+                <% } %>
+
+            </div>
+
+            <!-- Pravý sloupec: seznam přátel -->
+            <div class="game-right">
+                <div class="game-board">
+                    <h2>Seznam přátel</h2>
+                    <% if (friends && friends.length > 0) { %>
+                        <% friends.forEach(friend => { %>
+                        <div class="friends-row">
+                            <span class="friends-name"><%= friend.username %></span>
+                            <span class="friends-stats"><%= friend.wins %> V / <%= friend.losses %> P</span>
+                            <form action="/friends/remove" method="POST" style="display:inline;">
+                                <input type="hidden" name="friendId" value="<%= friend.id %>">
+                                <button type="submit" class="btn-secondary" onclick="return confirm('Opravdu chcete odebrat přítele?')">Odebrat</button>
+                            </form>
+                        </div>
+                        <% }) %>
+                    <% } else { %>
+                        <p>Zatím nemáte žádné přátele.</p>
+                    <% } %>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

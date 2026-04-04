@@ -4,7 +4,7 @@
 function checkCurrentScore(chosenDice) {
     // počet daného čísla, např 3 na druhém místě znamená, že máme tři dvojky
     let diceLeft = [0,0,0,0,0,0]; 
-    let maxScore = 0;
+    let score = 0;
 
     // přeložení parametru chosenDice na proměnou diceLeft
     for (let die of chosenDice) {
@@ -13,37 +13,19 @@ function checkCurrentScore(chosenDice) {
 
     // postupky
     // 1-6
-    if (
-        diceLeft[1] > 0 && diceLeft[2] > 0 && diceLeft[3] > 0
-        && diceLeft[4] > 0 && diceLeft[5] > 0 && diceLeft[0] > 0
-    ) {
-
-        maxScore += 1500;
-        diceLeft = [0,0,0,0,0,0]; // všechny kostky se počítají
+    if (diceLeft.every(c => c >= 1)) {
+        score += 1500;
+        diceLeft = [0, 0, 0, 0, 0, 0];
     }
     // 2-6
-    else if (
-        diceLeft[1] > 0 && diceLeft[2] > 0 && diceLeft[3] > 0 
-        && diceLeft[4] > 0 && diceLeft[5] > 0
-    ) {
-        maxScore += 750;
-        for (let i = 0; i < 6; i++) {
-            if (diceLeft[i] > 0) {
-                diceLeft[i]--;
-            }
-        }
+    else if (diceLeft.slice(1).every(c => c >= 1)) {
+        score += 750;
+        for (let i = 1; i < 6; i++) diceLeft[i]--;
     }
     // 1-5
-    else if (
-        diceLeft[0] > 0 && diceLeft[1] > 0 && diceLeft[2] > 0 
-        && diceLeft[3] > 0 && diceLeft[4] > 0
-    ){
-        maxScore += 500;
-        for (let i = 0; i < 6; i++) {
-            if (diceLeft[i] < 6) {
-                diceLeft[i]--;
-            }
-        }
+    else if (diceLeft.slice(0, 5).every(c => c >= 1)) {
+        score += 500;
+        for (let i = 0; i < 5; i++) diceLeft[i]--;
     }
 
     // několik stejných
@@ -51,25 +33,23 @@ function checkCurrentScore(chosenDice) {
 
     // tři a více jedniček, základní počet bodů je 1000
     if (diceLeft[0] >= 3) {
-        maxScore += 1000 * (diceLeft[0] - 2);
+        score += 1000 * Math.pow(2, diceLeft[0] - 3);
         diceLeft[0] = 0;
     }
 
     // tři a více stejné čísla kromě jedniček, základní počet bodů je číslo * 100
     for (let i = 1; i < 6; i++) {
         if (diceLeft[i] >= 3) {
-            maxScore += (i + 1) * 100 * (diceLeft[i] - 2);
+            score += (i + 1) * 100 * Math.pow(2, diceLeft[i] - 3);
             diceLeft[i] = 0;
         }
     }
 
     // jedničky a pětky
-    maxScore += diceLeft[0] * 100; // každá jednička stojí 100 bodů
-    maxScore += diceLeft[4] * 50;  // každá pětka stojí 50 bodů
+    score += diceLeft[0] * 100; // každá jednička stojí 100 bodů
+    score += diceLeft[4] * 50;  // každá pětka stojí 50 bodů
 
-    return maxScore;
+    return score;
 };
 
-module.exports = {
-    checkCurrentScore
-};
+module.exports = { checkCurrentScore };

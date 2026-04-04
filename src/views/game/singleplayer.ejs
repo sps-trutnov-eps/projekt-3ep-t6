@@ -7,25 +7,54 @@
     <div class="game-wrapper">
         <h1><%= message %></h1>
 
-        <button class="refresh" onclick="getGameState()">Aktualizovat stav hry</button>
-
         <div id="game-finished" style="display: none;">
-            <form action="/game/singleplayer/new" method="POST" style="margin-bottom: 2rem;">
+            <div class="finished-banner">
+                <p>🏆 Vyhráli jste! Gratulujeme!</p>
+            </div>
+            <form action="/game/singleplayer/new" method="POST" style="margin-top: 1rem;">
                 <button type="submit" class="btn-primary">Začít novou hru</button>
             </form>
         </div>
 
-        <div class="game-state">
-            <p>Hrajete proti: <span id="opponent-name"></span></p>
-            <p>Vaše celkové skóre: <span id="player-score"></span></p>
-            <p>Celkové skóre soupeře: <span id="opponent-score"></span></p>
-            <p>V tomto kole jste naházeli: <span id="current-roll"></span></p>
-            <button id="roll-dice" class="btn-primary" onclick="rollDice()">Hodit kostkami</button>
-        </div>
+        <div class="game-layout">
 
-        <div class="game-board">
-            <p>Kostky: <span id="dice"></span></p>
-            <p>Body na stole: <span id="turn-score"></span></p>
+            <!-- Levý sloupec: info + akce -->
+            <div class="game-left">
+                <div class="game-state">
+                    <p>Hrajete proti: <span id="opponent-name">Chudý starec</span></p>
+                    <p>Vaše celkové skóre: <span id="player-score">0</span></p>
+                    <p>Cíl: <span>10 000</span></p>
+                </div>
+
+                <div class="game-board">
+                    <p>Body na stole: <span id="turn-score">0</span></p>
+
+                    <div id="selection-score-row" class="score-row" style="display:none;">
+                        <span>Body za výběr:</span>
+                        <span id="selection-score" class="score-highlight">0</span>
+                    </div>
+
+                    <div id="bust-msg" class="bust-message" style="display:none;">
+                        Farkle! Přišel jsi o body v tomto kole.
+                    </div>
+                </div>
+
+                <div id="action-area" class="action-area">
+                    <button id="btn-roll"    class="btn-primary"   onclick="rollDice()">Hodit kostkami</button>
+                    <button id="btn-confirm" class="btn-primary"   onclick="confirmSelection()" style="display:none;" disabled>Potvrdit výběr</button>
+                    <button id="btn-reroll"  class="btn-secondary" onclick="rerollDice()"       style="display:none;">Hodit znovu</button>
+                    <button id="btn-bank"    class="btn-secondary" onclick="bankPoints()"        style="display:none;">Bankovat</button>
+                </div>
+            </div>
+
+            <!-- Pravý sloupec: kostky -->
+            <div class="game-right">
+                <div class="game-board">
+                    <p>Zbývající kostky: <span id="dice-left-count">6</span></p>
+                    <div id="dice-area" class="dice-area"></div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
