@@ -171,6 +171,52 @@
       #btn-bank { background: #4a4; color: #fff; }
       #btn-bank:hover:not(:disabled) { background: #393; }
       #actions button:disabled { opacity: 0.3; cursor: default; }
+
+      /* --- Rules button + modal --- */
+      #btn-rules {
+        padding: 6px 14px;
+        border: 1px solid #444;
+        border-radius: 6px;
+        background: #2a2a2a;
+        color: #aaa;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      #btn-rules:hover { border-color: #888; color: #eee; }
+      #rules-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 100;
+        justify-content: center;
+        align-items: center;
+      }
+      #rules-modal.open { display: flex; }
+      #rules-content {
+        background: #222;
+        border-radius: 12px;
+        padding: 28px 32px;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow-y: auto;
+        color: #ddd;
+        line-height: 1.6;
+        font-size: 14px;
+      }
+      #rules-content h2 { margin-bottom: 12px; color: #fff; }
+      #rules-content h3 { margin-top: 14px; margin-bottom: 4px; color: #f0c040; font-size: 15px; }
+      #rules-content ul { padding-left: 20px; }
+      #rules-close {
+        margin-top: 16px;
+        padding: 8px 24px;
+        border: none;
+        border-radius: 6px;
+        background: #2a7fff;
+        color: #fff;
+        font-size: 14px;
+        cursor: pointer;
+      }
     </style>
 </head>
 <body>
@@ -186,6 +232,7 @@
         <span class="value" id="turn-score">0</span>
       </div>
       <div id="turn-indicator" class="human">Your turn</div>
+      <button id="btn-rules" title="Rules">Rules</button>
       <div class="score-group" id="ai-score-group">
         <span class="label">AI</span>
         <span class="value" id="ai-score">0</span>
@@ -216,6 +263,37 @@
           <button id="btn-bank" disabled>Bank</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div id="rules-modal">
+    <div id="rules-content">
+      <h2>Farkle Rules</h2>
+      <p>Roll 6 dice. Set aside scoring dice, then roll again or bank your points.</p>
+
+      <h3>Scoring</h3>
+      <ul>
+        <li>Single 1 = 100 pts</li>
+        <li>Single 5 = 50 pts</li>
+        <li>Three of a kind = face x 100 (three 1s = 1000)</li>
+        <li>Four of a kind = face x 200</li>
+        <li>Five of a kind = face x 400</li>
+        <li>Six of a kind = face x 800</li>
+        <li>Straight (1-2-3-4-5-6) = 1500</li>
+        <li>Three pairs = 750</li>
+      </ul>
+
+      <h3>Gameplay</h3>
+      <ul>
+        <li>You must keep at least one scoring die each roll</li>
+        <li><b>Bank</b> to save your turn points to your total</li>
+        <li><b>Roll again</b> with remaining dice to push for more</li>
+        <li><b>Farkle</b> — if no dice score, you lose all turn points</li>
+        <li><b>Hot Dice</b> — if all 6 dice score, roll all 6 again</li>
+        <li>First to <b>10,000</b> points wins!</li>
+      </ul>
+
+      <button id="rules-close">Got it</button>
     </div>
   </div>
 </body>

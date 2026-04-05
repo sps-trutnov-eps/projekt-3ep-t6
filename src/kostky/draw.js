@@ -16,27 +16,28 @@ function drawScene(gl, programInfo, buffers, texture, rotation, pos) {
   // and we only want to see objects between 0.1 units
   // and 100 units away from the camera.
 
-  const fieldOfView = (45 * Math.PI) / 180; // in radians
+  const fieldOfView = (45 * Math.PI) / 180;
   const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
   const zNear = 0.1;
-  const zFar = 1000000000000.0;
+  const zFar = 100.0;
   const projectionMatrix = mat4.create();
-
-  // note: glMatrix always has the first argument
-  // as the destination to receive the result.
   mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
 
-  // Set the drawing position to the "identity" point, which is
-  // the center of the scene.
-  const modelViewMatrix = mat4.create();
-
-  // Now move the drawing position a bit to where we want to
-  // start drawing the square.
-  mat4.translate(
-    modelViewMatrix, // destination matrix
-    modelViewMatrix, // matrix to translate
-    [pos[0],pos[1],pos[2]], // amount to translate
+  // Camera: slightly above and behind, looking down at the table
+  const viewMatrix = mat4.create();
+  mat4.lookAt(viewMatrix,
+    [0, 5, 2],     // eye — raised up, slightly back
+    [0, -2, -8],   // center — looking at middle of table
+    [0, 1, 0],     // up
   );
+
+  // Model matrix: place the object
+  const modelMatrix = mat4.create();
+  mat4.translate(modelMatrix, modelMatrix, [pos[0], pos[1], pos[2]]);
+
+  // Combine: view * model
+  const modelViewMatrix = mat4.create();
+  mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
 
 
   // Rotation: quaternion [s, vx, vy, vz] (length 4) or Euler angles [rx, ry, rz] (length 3)

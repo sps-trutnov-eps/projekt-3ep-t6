@@ -143,6 +143,15 @@ const btnRoll = document.getElementById("btn-roll");
 const btnConfirm = document.getElementById("btn-confirm");
 const btnBank = document.getElementById("btn-bank");
 const dieBtns = document.querySelectorAll(".die-btn");
+const btnRules = document.getElementById("btn-rules");
+const rulesModal = document.getElementById("rules-modal");
+const rulesClose = document.getElementById("rules-close");
+
+btnRules.addEventListener('click', () => rulesModal.classList.add('open'));
+rulesClose.addEventListener('click', () => rulesModal.classList.remove('open'));
+rulesModal.addEventListener('click', (e) => {
+  if (e.target === rulesModal) rulesModal.classList.remove('open');
+});
 
 // --- Game UI state ---
 let settleHandled = true;

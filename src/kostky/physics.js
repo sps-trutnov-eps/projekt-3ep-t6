@@ -141,9 +141,9 @@ function createBodies() {
       sleepSpeedLimit: 0.1,
       sleepTimeLimit: 1.0,
     });
-    // Start as static at rest positions (hidden below view until first roll)
+    // Start off-screen behind camera until first roll
     body.type = CANNON.Body.STATIC;
-    body.position.set(-2 + (i % 3) * 2, FLOOR_Y + HALF_SIZE, -9 + Math.floor(i / 3) * 2);
+    body.position.set(0, FLOOR_Y + HALF_SIZE, 10);
     world.addBody(body);
     dice.push({ body, settled: true });
   }
@@ -190,17 +190,17 @@ function rollDice(indices) {
     b.wakeUp();
     d.settled = false;
 
-    // Spawn above center of visible table, spread out a bit
-    const spread = count > 1 ? (j / (count - 1)) * 4 - 2 : 0;
+    // Spawn spread out with staggered heights to prevent stacking
+    const spread = count > 1 ? (j / (count - 1)) * 6 - 3 : 0;
     b.position.set(
-      spread + (Math.random() - 0.5) * 0.8,
-      1 + Math.random() * 2,
-      -8 + (Math.random() - 0.5) * 1.5,
+      spread + (Math.random() - 0.5) * 0.5,
+      2 + j * 1.5 + Math.random() * 0.5,
+      -8 + (Math.random() - 0.5) * 1.0,
     );
 
     b.velocity.set(
-      (Math.random() - 0.5) * 3,
-      -2 - Math.random() * 2,
+      (Math.random() - 0.5) * 4,
+      -3 - Math.random() * 2,
       (Math.random() - 0.5) * 3,
     );
 
@@ -271,6 +271,15 @@ function loop(dt) {
         b.quaternion.z * target.z + b.quaternion.w * target.w
       );
       if (dotVal > 0.999 && speed < 0.05) {
+        // Check if stacked on another die (Y too high above floor)
+        if (b.position.y > FLOOR_Y + HALF_SIZE + 1.5) {
+          // Nudge sideways and let it re-settle
+          b.position.x += (Math.random() - 0.5) * 4;
+          b.position.y = FLOOR_Y + HALF_SIZE + 3;
+          b.velocity.set((Math.random() - 0.5) * 2, -2, (Math.random() - 0.5) * 2);
+          b.wakeUp();
+          continue;
+        }
         b.quaternion.copy(target);
         b.angularVelocity.set(0, 0, 0);
         b.velocity.set(0, 0, 0);
