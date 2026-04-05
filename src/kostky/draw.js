@@ -8,7 +8,7 @@
 
 const { mat4 } = window;
 
-function drawScene(gl, programInfo, buffers, texture, cubeRotation, pos) {
+function drawScene(gl, programInfo, buffers, texture, rotation, pos) {
   // Create a perspective matrix, a special matrix that is
   // used to simulate the distortion of perspective in a camera.
   // Our field of view is 45 degrees, with a width/height
@@ -39,27 +39,32 @@ function drawScene(gl, programInfo, buffers, texture, cubeRotation, pos) {
   );
 
 
-  //ROTACE PASS OWN VALUES HERE
-  //a jeste per dice lol
-
-  mat4.rotate(
-  modelViewMatrix, // destination matrix
-  modelViewMatrix, // matrix to rotate
-  cubeRotation, // amount to rotate in radians
-  [0, 0, 1],
-  ); // axis to rotate around (Z)
-  mat4.rotate(
-  modelViewMatrix, // destination matrix
-  modelViewMatrix, // matrix to rotate
-  cubeRotation * 0.7, // amount to rotate in radians
-  [0, 1, 0],
-  ); // axis to rotate around (Y)
-  mat4.rotate(
-  modelViewMatrix, // destination matrix
-  modelViewMatrix, // matrix to rotate
-  cubeRotation * 0.3, // amount to rotate in radians
-  [1, 0, 0],
-  ); // axis to rotate around (X)
+  // Rotation: quaternion [s, vx, vy, vz] (length 4) or Euler angles [rx, ry, rz] (length 3)
+  if (Array.isArray(rotation) && rotation.length === 4) {
+    // Build rotation matrix from quaternion (Baraff SIGGRAPH '97, section 10)
+    const [s, vx, vy, vz] = rotation;
+    const rotMat = mat4.create();
+    // gl-matrix uses column-major: indices 0-3 = col0, 4-7 = col1, 8-11 = col2
+    rotMat[0]  = 1 - 2*vy*vy - 2*vz*vz;
+    rotMat[1]  = 2*vx*vy + 2*s*vz;
+    rotMat[2]  = 2*vx*vz - 2*s*vy;
+    rotMat[3]  = 0;
+    rotMat[4]  = 2*vx*vy - 2*s*vz;
+    rotMat[5]  = 1 - 2*vx*vx - 2*vz*vz;
+    rotMat[6]  = 2*vy*vz + 2*s*vx;
+    rotMat[7]  = 0;
+    rotMat[8]  = 2*vx*vz + 2*s*vy;
+    rotMat[9]  = 2*vy*vz - 2*s*vx;
+    rotMat[10] = 1 - 2*vx*vx - 2*vy*vy;
+    rotMat[11] = 0;
+    mat4.multiply(modelViewMatrix, modelViewMatrix, rotMat);
+  } else {
+    // Fallback: Euler angles [rx, ry, rz] (used for static objects like table)
+    const rot = Array.isArray(rotation) ? rotation : [rotation * 0.3, rotation * 0.7, rotation];
+    mat4.rotate(modelViewMatrix, modelViewMatrix, rot[0], [1, 0, 0]);
+    mat4.rotate(modelViewMatrix, modelViewMatrix, rot[1], [0, 1, 0]);
+    mat4.rotate(modelViewMatrix, modelViewMatrix, rot[2], [0, 0, 1]);
+  }
 
   //normal matrix for light
   const normalMatrix = mat4.create();

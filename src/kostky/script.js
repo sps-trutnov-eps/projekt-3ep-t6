@@ -13,7 +13,6 @@ import { loop } from "./physics.js"
 const cnv = document.getElementById("cnv");
 var gl = cnv.getContext("webgl");
 
-let cubeRotation = 0.0;
 let deltaTime = 0;
 
 gl.clearColor(0, 0, 0, 1);
@@ -196,17 +195,6 @@ gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 // actual frame rate.
 let then = 0;
 
-const pos = [
-    [-3, 2, -8],
-    [0, 2, -8],
-    [3, 2, -8],
-    [-3, -2, -8],
-    [0, -2, -8],
-    [3, -2, -8],
-  ];
-
-
-
 // Draw the scene
 function render(now) {
   now *= 0.001; // convert to seconds
@@ -219,16 +207,17 @@ function render(now) {
   gl.depthFunc(gl.LEQUAL);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  //fyzika
-  loop(pos)
+  // Run physics step
+  const diceState = loop(deltaTime);
 
-  for(let i=0; i<6; i++){
-  drawScene(gl, programInfo, buffers, texture, cubeRotation, pos[i]);
+  // Draw dice using physics state
+  for (let i = 0; i < diceState.length; i++) {
+    const d = diceState[i];
+    drawScene(gl, programInfo, buffers, texture, d.quat, d.pos);
   }
 
-  drawScene(gl, programInfo, tableBuffers, tableTexture, 0, [0, -4, -8]);
-
-  cubeRotation += deltaTime;
+  // Draw table (static, no rotation)
+  drawScene(gl, programInfo, tableBuffers, tableTexture, [0, 0, 0], [0, -4, -8]);
 
   requestAnimationFrame(render);
 }
