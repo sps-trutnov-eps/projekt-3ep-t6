@@ -2,6 +2,7 @@
   script.js
   ---------
   Entry point — WebGL setup, render loop, and game UI orchestration.
+  Handles both human and AI turns with visual dice rolling.
 */
 import { initBuffers, initTableBuffers } from "./init-buffers.js";
 import { drawScene } from "./draw.js";
@@ -11,6 +12,19 @@ import * as game from "./game.js";
 // --- WebGL init ---
 const cnv = document.getElementById("cnv");
 const gl = cnv.getContext("webgl");
+
+function resizeCanvas() {
+  const rect = cnv.parentElement.getBoundingClientRect();
+  const w = Math.floor(rect.width);
+  const h = Math.floor(rect.height);
+  if (cnv.width !== w || cnv.height !== h) {
+    cnv.width = w;
+    cnv.height = h;
+    gl.viewport(0, 0, w, h);
+  }
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
 
 let deltaTime = 0;
 
@@ -119,8 +133,10 @@ const tableTexture = loadTexture(gl, "WoodTexture.jpg");
 gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
 // --- UI elements ---
-const elTotalScore = document.getElementById("total-score");
+const elPlayerScore = document.getElementById("player-score");
+const elAiScore = document.getElementById("ai-score");
 const elTurnScore = document.getElementById("turn-score");
+const elTurnIndicator = document.getElementById("turn-indicator");
 const elStatus = document.getElementById("status-msg");
 const elSelectionScore = document.getElementById("selection-score");
 const btnRoll = document.getElementById("btn-roll");
@@ -129,12 +145,18 @@ const btnBank = document.getElementById("btn-bank");
 const dieBtns = document.querySelectorAll(".die-btn");
 
 // --- Game UI state ---
-let settleHandled = true; // true = not waiting for settle
+let settleHandled = true;
 
 function updateUI() {
   const s = game.getState();
-  elTotalScore.textContent = s.totalScore;
+  elPlayerScore.textContent = s.playerScore;
+  elAiScore.textContent = s.aiScore;
   elTurnScore.textContent = s.turnScore;
+
+  // Turn indicator
+  const isHuman = s.currentPlayer === 'human';
+  elTurnIndicator.textContent = isHuman ? 'Your turn' : 'AI turn';
+  elTurnIndicator.className = isHuman ? 'human' : 'ai';
 
   // Die buttons
   for (let i = 0; i < NUM_DICE; i++) {
@@ -145,22 +167,20 @@ function updateUI() {
     btn.disabled = s.phase !== 'SELECTING' || s.kept[i];
   }
 
-  // Action buttons
-  btnRoll.disabled = s.phase !== 'READY' && s.phase !== 'SELECTING';
-  btnConfirm.disabled = s.phase !== 'SELECTING';
-  btnBank.disabled = s.phase !== 'SELECTING' || s.turnScore === 0;
+  // Action buttons — only during human turns
+  const humanSelecting = s.phase === 'SELECTING';
+  btnRoll.disabled = !(s.phase === 'READY');
+  btnConfirm.disabled = !humanSelecting;
+  btnBank.disabled = !humanSelecting || s.turnScore === 0;
 
-  // In SELECTING phase, only enable Roll if player has confirmed at least some dice this sub-turn
-  // (i.e., there are kept dice or turnScore > 0 from a previous confirm)
-  if (s.phase === 'SELECTING') {
-    // Roll = re-roll remaining. Only allowed after confirming a selection
-    btnRoll.disabled = true; // will be re-enabled after confirm
+  if (humanSelecting) {
+    btnRoll.disabled = true; // enabled after confirm
   }
 
   // Selection score preview
   const sel = game.getSelectedScore();
-  if (s.phase === 'SELECTING' && sel.score > 0) {
-    elSelectionScore.textContent = `+${sel.score} points`;
+  if (humanSelecting && sel.score > 0) {
+    elSelectionScore.textContent = `+${sel.score}`;
   } else {
     elSelectionScore.textContent = '';
   }
@@ -171,59 +191,56 @@ function setStatus(text, cls) {
   elStatus.className = cls || '';
 }
 
-// --- After confirm, enable roll/bank ---
+function disableAllButtons() {
+  btnRoll.disabled = true;
+  btnConfirm.disabled = true;
+  btnBank.disabled = true;
+  for (const btn of dieBtns) btn.disabled = true;
+}
+
 function postConfirmUI() {
   const s = game.getState();
   btnRoll.disabled = false;
   btnBank.disabled = false;
   btnConfirm.disabled = true;
-
-  // Disable die buttons (already confirmed)
-  for (let i = 0; i < NUM_DICE; i++) {
-    dieBtns[i].disabled = true;
-  }
+  for (const btn of dieBtns) btn.disabled = true;
 
   const remaining = s.kept.filter(k => !k).length;
   if (remaining === 0) {
     setStatus('Hot Dice! All 6 scored — roll again!');
   } else {
-    setStatus(`${s.turnScore} points this turn. Roll ${remaining} dice or Bank?`);
+    setStatus(`${s.turnScore} pts this turn. Roll ${remaining} dice or Bank?`);
   }
 }
 
-// --- Event handlers ---
-
-btnRoll.addEventListener('click', () => {
+// --- Helper: trigger a roll (human or AI) ---
+function triggerRoll() {
   const s = game.getState();
-
-  if (s.phase === 'READY' || s.phase === 'WIN') {
-    if (s.phase === 'WIN') game.newGame();
-    const indices = game.startRoll();
-    rollAllDice();
-    settleHandled = false;
-    setStatus('Rolling...');
-    updateUI();
-    // Disable everything during roll
-    btnRoll.disabled = true;
-    btnConfirm.disabled = true;
-    btnBank.disabled = true;
-    return;
-  }
-
-  // Re-roll after confirming selection
   const indices = game.startRoll();
-  if (indices.length === 0) {
-    // Hot Dice — all kept, roll all 6
+  if (indices.length === 0 || indices.length === 6) {
     rollAllDice();
   } else {
     rollDice(indices);
   }
   settleHandled = false;
-  setStatus('Rolling...');
+  disableAllButtons();
   updateUI();
-  btnRoll.disabled = true;
-  btnConfirm.disabled = true;
-  btnBank.disabled = true;
+}
+
+// --- Human event handlers ---
+
+btnRoll.addEventListener('click', () => {
+  const s = game.getState();
+  if (s.phase === 'WIN' || s.phase === 'LOSE') {
+    game.newGame();
+    updateUI();
+    setStatus('Press Roll to start!');
+    btnRoll.textContent = 'Roll';
+    btnRoll.disabled = false;
+    return;
+  }
+  setStatus('Rolling...');
+  triggerRoll();
 });
 
 btnConfirm.addEventListener('click', () => {
@@ -240,17 +257,16 @@ btnBank.addEventListener('click', () => {
   const s = game.bank();
   updateUI();
   if (s.phase === 'WIN') {
-    setStatus(`You win with ${s.totalScore} points!`, 'win');
+    setStatus(`You win with ${s.playerScore} points!`, 'win');
     btnRoll.textContent = 'New Game';
     btnRoll.disabled = false;
-    btnBank.disabled = true;
-  } else {
-    setStatus(`Banked! Total: ${s.totalScore}. Press Roll.`);
-    btnRoll.textContent = 'Roll';
+  } else if (s.phase === 'AI_READY') {
+    // AI's turn starts
+    setStatus('You banked. AI\'s turn...');
+    setTimeout(() => startAiTurn(), 1000);
   }
 });
 
-// Die toggle buttons
 dieBtns.forEach(btn => {
   btn.addEventListener('click', () => {
     const idx = parseInt(btn.dataset.index);
@@ -258,6 +274,84 @@ dieBtns.forEach(btn => {
     updateUI();
   });
 });
+
+// --- AI turn logic (visual, with delays) ---
+
+function startAiTurn() {
+  setStatus('AI is rolling...');
+  triggerRoll();
+  // settle detection in render loop will call handleAiSettle
+}
+
+function handleAiSettle() {
+  const s = game.getState();
+
+  if (s.phase === 'AI_FARKLE') {
+    setStatus('AI Farkle! AI loses turn points.', 'farkle');
+    updateUI();
+    setTimeout(() => {
+      game.resetTurn();
+      updateUI();
+      setStatus('AI farkled! Your turn — press Roll.');
+      btnRoll.disabled = false;
+    }, 1500);
+    return;
+  }
+
+  // AI_SELECTING — pick scoring dice with a delay
+  const toKeep = game.aiPickScoringDice(s.diceValues, s.kept);
+  if (toKeep.length === 0) return; // shouldn't happen if not farkle
+
+  // Visually select dice one by one
+  let idx = 0;
+  const selectInterval = setInterval(() => {
+    if (idx >= toKeep.length) {
+      clearInterval(selectInterval);
+      // Confirm after a brief pause
+      setTimeout(() => aiConfirmAndDecide(), 600);
+      return;
+    }
+    game.toggleSelect(toKeep[idx]);
+    updateUI();
+    // Show the dice values on buttons during AI turn
+    for (let i = 0; i < NUM_DICE; i++) {
+      dieBtns[i].textContent = s.diceValues[i] || '-';
+    }
+    idx++;
+  }, 300);
+}
+
+function aiConfirmAndDecide() {
+  const result = game.confirmKeep();
+  if (!result) return;
+  updateUI();
+
+  const s = game.getState();
+  const shouldBank = game.aiShouldBank();
+
+  if (shouldBank) {
+    setStatus(`AI banks ${s.turnScore} points!`);
+    setTimeout(() => {
+      const afterBank = game.bank();
+      updateUI();
+      if (afterBank.phase === 'LOSE') {
+        setStatus(`AI wins with ${afterBank.aiScore} points!`, 'lose');
+        btnRoll.textContent = 'New Game';
+        btnRoll.disabled = false;
+      } else {
+        setStatus(`AI banked. Your turn — press Roll.`);
+        btnRoll.disabled = false;
+      }
+    }, 1000);
+  } else {
+    // Roll again
+    const remaining = s.kept.filter(k => !k).length;
+    setStatus(`AI pushes (${s.turnScore} pts). Rolling ${remaining || 6} dice...`);
+    setTimeout(() => {
+      triggerRoll();
+    }, 1000);
+  }
+}
 
 // --- Render loop ---
 let then = 0;
@@ -267,6 +361,7 @@ function render(now) {
   deltaTime = now - then;
   then = now;
 
+  resizeCanvas();
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.clearDepth(1.0);
   gl.enable(gl.DEPTH_TEST);
@@ -275,38 +370,46 @@ function render(now) {
 
   const diceState = loop(deltaTime);
 
-  // Draw dice
   for (let i = 0; i < diceState.length; i++) {
     const d = diceState[i];
     drawScene(gl, programInfo, buffers, texture, d.quat, d.pos);
   }
 
-  // Draw table
   drawScene(gl, programInfo, tableBuffers, tableTexture, [0, 0, 0], [0, -4, -8]);
 
-  // Check settle
+  // Settle detection — handles both human and AI
   if (!settleHandled && allSettled()) {
     settleHandled = true;
     const values = getDiceValues();
     const s = game.onDiceSettled(values);
     updateUI();
 
-    if (s.phase === 'FARKLE') {
-      setStatus('Farkle! No scoring dice.', 'farkle');
-      setTimeout(() => {
-        game.resetTurn();
-        updateUI();
-        setStatus('Farkle! Turn lost. Press Roll.');
-        btnRoll.disabled = false;
-      }, 1500);
-    } else if (s.phase === 'SELECTING') {
-      setStatus('Select scoring dice, then Confirm.');
+    if (s.currentPlayer === 'ai') {
+      // AI turn settle
+      handleAiSettle();
+    } else {
+      // Human turn settle
+      if (s.phase === 'FARKLE') {
+        setStatus('Farkle! No scoring dice.', 'farkle');
+        setTimeout(() => {
+          const afterReset = game.resetTurn();
+          updateUI();
+          if (afterReset.phase === 'AI_READY') {
+            setStatus('You farkled! AI\'s turn...');
+            setTimeout(() => startAiTurn(), 1000);
+          } else {
+            setStatus('Farkle! Turn lost. Press Roll.');
+            btnRoll.disabled = false;
+          }
+        }, 1500);
+      } else if (s.phase === 'SELECTING') {
+        setStatus('Select scoring dice, then Confirm.');
+      }
     }
   }
 
   requestAnimationFrame(render);
 }
 
-// Init game state
 game.newGame();
 requestAnimationFrame(render);

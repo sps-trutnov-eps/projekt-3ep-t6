@@ -1,19 +1,21 @@
 // game.js
 // -------
-// Farkle game state machine and scoring logic.
+// Farkle game state machine, scoring logic, and AI opponent.
 // Pure JS — no DOM, no physics dependency.
 
 const WIN_SCORE = 10000;
 
 const state = {
-  totalScore: 0,
+  playerScore: 0,
+  aiScore: 0,
   turnScore: 0,
   diceValues: [0, 0, 0, 0, 0, 0],
-  // Which dice are kept THIS sub-roll (toggled by player before confirm)
   selected: [false, false, false, false, false, false],
-  // Which dice are kept for the entire turn (accumulated across sub-rolls)
   kept: [false, false, false, false, false, false],
-  phase: 'READY', // READY | ROLLING | SELECTING | FARKLE | WIN
+  phase: 'READY',
+  // READY | ROLLING | SELECTING | FARKLE | WIN | LOSE
+  // AI phases: AI_ROLLING | AI_SELECTING | AI_DECIDING | AI_FARKLE
+  currentPlayer: 'human', // 'human' | 'ai'
 };
 
 // --- Scoring ---
@@ -21,7 +23,7 @@ const state = {
 function calculateScore(values) {
   if (values.length === 0) return { score: 0, allScoring: true };
 
-  const counts = [0, 0, 0, 0, 0, 0]; // index 0 = face 1, index 5 = face 6
+  const counts = [0, 0, 0, 0, 0, 0];
   for (const v of values) counts[v - 1]++;
 
   let score = 0;
@@ -32,12 +34,12 @@ function calculateScore(values) {
     return { score: 1500, allScoring: true };
   }
 
-  // Three pairs (e.g. 2-2-3-3-5-5)
+  // Three pairs
   if (values.length === 6 && counts.filter(c => c === 2).length === 3) {
     return { score: 750, allScoring: true };
   }
 
-  // N-of-a-kind (process from 6 down)
+  // N-of-a-kind
   for (let face = 1; face <= 6; face++) {
     const c = counts[face - 1];
     if (c >= 3) {
@@ -46,71 +48,161 @@ function calculateScore(values) {
       else if (c === 5) { score += base * 4; diceUsed += 5; }
       else if (c === 4) { score += base * 2; diceUsed += 4; }
       else { score += base; diceUsed += 3; }
-      counts[face - 1] -= c >= 3 ? (c >= 6 ? 6 : c >= 5 ? 5 : c >= 4 ? 4 : 3) : 0;
+      counts[face - 1] -= (c >= 6 ? 6 : c >= 5 ? 5 : c >= 4 ? 4 : 3);
     }
   }
 
   // Remaining 1s and 5s
-  score += counts[0] * 100; // 1s
+  score += counts[0] * 100;
   diceUsed += counts[0];
-  score += counts[4] * 50;  // 5s
+  score += counts[4] * 50;
   diceUsed += counts[4];
 
   return { score, allScoring: diceUsed === values.length };
 }
 
-// Check if ANY scoring is possible from these values
 function canScore(values) {
   return calculateScore(values).score > 0;
+}
+
+// --- AI Logic ---
+
+// Find which dice the AI should keep (greedy: keep all scoring dice)
+function aiPickScoringDice(diceValues, kept) {
+  const available = [];
+  for (let i = 0; i < 6; i++) {
+    if (!kept[i]) available.push(i);
+  }
+
+  // Try keeping all available scoring dice — greedy approach
+  // First find the best scoring combo from available dice
+  const availValues = available.map(i => diceValues[i]);
+  const fullResult = calculateScore(availValues);
+
+  if (fullResult.allScoring) {
+    // All available dice score — keep them all
+    return available;
+  }
+
+  // Otherwise, figure out which dice contribute to scoring.
+  // Strategy: keep triplets first, then individual 1s and 5s
+  const counts = [0, 0, 0, 0, 0, 0];
+  for (const v of availValues) counts[v - 1]++;
+
+  const toKeep = [];
+  const used = [0, 0, 0, 0, 0, 0]; // track how many of each face we've assigned
+
+  // Keep N-of-a-kind groups (3+)
+  for (let face = 1; face <= 6; face++) {
+    const c = counts[face - 1];
+    if (c >= 3) {
+      const keepCount = c >= 6 ? 6 : c >= 5 ? 5 : c >= 4 ? 4 : 3;
+      let assigned = 0;
+      for (const i of available) {
+        if (diceValues[i] === face && assigned < keepCount && !toKeep.includes(i)) {
+          toKeep.push(i);
+          assigned++;
+        }
+      }
+      used[face - 1] = keepCount;
+    }
+  }
+
+  // Keep remaining 1s and 5s
+  for (const i of available) {
+    if (toKeep.includes(i)) continue;
+    const face = diceValues[i];
+    if (face === 1 && used[0] < counts[0]) {
+      toKeep.push(i);
+      used[0]++;
+    } else if (face === 5 && used[4] < counts[4]) {
+      toKeep.push(i);
+      used[4]++;
+    }
+  }
+
+  return toKeep;
+}
+
+// Decide whether to bank or roll again
+function aiShouldBank() {
+  const diceLeft = state.kept.filter(k => !k).length;
+  const gap = state.playerScore - state.aiScore; // positive = player ahead
+
+  // Base threshold — bank if turn score is high enough
+  let threshold = 300;
+
+  // Adjust based on game state
+  if (gap > 2000) {
+    // Behind — push harder
+    threshold = 500;
+  } else if (gap < -2000) {
+    // Ahead — play safe
+    threshold = 200;
+  }
+
+  // If player is near winning, push very hard
+  if (state.playerScore >= 8000) {
+    threshold = 600;
+  }
+
+  // Fewer dice left = higher risk of farkle, lower threshold
+  if (diceLeft <= 2) {
+    threshold = Math.min(threshold, 250);
+  }
+
+  // Hot Dice (0 dice left = all scored) — always roll again
+  if (diceLeft === 0) return false;
+
+  // If turn score could win the game, always bank
+  if (state.aiScore + state.turnScore >= WIN_SCORE) return true;
+
+  return state.turnScore >= threshold;
 }
 
 // --- Game flow ---
 
 function newGame() {
-  state.totalScore = 0;
+  state.playerScore = 0;
+  state.aiScore = 0;
   state.turnScore = 0;
   state.diceValues = [0, 0, 0, 0, 0, 0];
   state.selected = [false, false, false, false, false, false];
   state.kept = [false, false, false, false, false, false];
   state.phase = 'READY';
+  state.currentPlayer = 'human';
   return { ...state };
 }
 
 function startRoll() {
-  // Clear selections from last sub-roll
   state.selected = [false, false, false, false, false, false];
-
-  // Determine which dice to roll (non-kept)
   const indices = [];
   for (let i = 0; i < 6; i++) {
     if (!state.kept[i]) indices.push(i);
   }
-
-  state.phase = 'ROLLING';
+  state.phase = state.currentPlayer === 'human' ? 'ROLLING' : 'AI_ROLLING';
   return indices;
 }
 
 function onDiceSettled(values) {
   state.diceValues = values;
-
-  // Check only the dice that were just rolled (not kept)
   const rolledValues = [];
   for (let i = 0; i < 6; i++) {
     if (!state.kept[i]) rolledValues.push(values[i]);
   }
 
   if (!canScore(rolledValues)) {
-    state.phase = 'FARKLE';
+    state.phase = state.currentPlayer === 'human' ? 'FARKLE' : 'AI_FARKLE';
     return { ...state };
   }
 
-  state.phase = 'SELECTING';
+  state.phase = state.currentPlayer === 'human' ? 'SELECTING' : 'AI_SELECTING';
   return { ...state };
 }
 
 function toggleSelect(index) {
   if (state.phase !== 'SELECTING') return { ...state };
-  if (state.kept[index]) return { ...state }; // can't toggle already-kept dice
+  if (state.kept[index]) return { ...state };
   state.selected[index] = !state.selected[index];
   return { ...state };
 }
@@ -124,12 +216,11 @@ function getSelectedScore() {
 }
 
 function confirmKeep() {
-  if (state.phase !== 'SELECTING') return null;
+  if (state.phase !== 'SELECTING' && state.phase !== 'AI_SELECTING') return null;
 
   const result = getSelectedScore();
-  if (result.score === 0) return null; // invalid selection
+  if (result.score === 0) return null;
 
-  // Mark selected dice as kept
   for (let i = 0; i < 6; i++) {
     if (state.selected[i]) state.kept[i] = true;
   }
@@ -137,7 +228,7 @@ function confirmKeep() {
   state.turnScore += result.score;
   state.selected = [false, false, false, false, false, false];
 
-  // Hot Dice: all 6 dice are kept → fresh set of 6
+  // Hot Dice
   if (state.kept.every(k => k)) {
     state.kept = [false, false, false, false, false, false];
   }
@@ -146,16 +237,26 @@ function confirmKeep() {
 }
 
 function bank() {
-  state.totalScore += state.turnScore;
+  if (state.currentPlayer === 'human') {
+    state.playerScore += state.turnScore;
+  } else {
+    state.aiScore += state.turnScore;
+  }
+
   state.turnScore = 0;
   state.kept = [false, false, false, false, false, false];
   state.selected = [false, false, false, false, false, false];
 
-  if (state.totalScore >= WIN_SCORE) {
-    state.phase = 'WIN';
-  } else {
-    state.phase = 'READY';
+  const totalForCurrent = state.currentPlayer === 'human' ? state.playerScore : state.aiScore;
+
+  if (totalForCurrent >= WIN_SCORE) {
+    state.phase = state.currentPlayer === 'human' ? 'WIN' : 'LOSE';
+    return { ...state };
   }
+
+  // Switch turns
+  state.currentPlayer = state.currentPlayer === 'human' ? 'ai' : 'human';
+  state.phase = state.currentPlayer === 'human' ? 'READY' : 'AI_READY';
   return { ...state };
 }
 
@@ -163,7 +264,10 @@ function resetTurn() {
   state.turnScore = 0;
   state.kept = [false, false, false, false, false, false];
   state.selected = [false, false, false, false, false, false];
-  state.phase = 'READY';
+
+  // Switch turns
+  state.currentPlayer = state.currentPlayer === 'human' ? 'ai' : 'human';
+  state.phase = state.currentPlayer === 'human' ? 'READY' : 'AI_READY';
   return { ...state };
 }
 
@@ -182,4 +286,6 @@ export {
   resetTurn,
   getState,
   calculateScore,
+  aiPickScoringDice,
+  aiShouldBank,
 };

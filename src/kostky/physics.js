@@ -13,11 +13,11 @@ const HALF_SIZE = 1.0;
 const FLOOR_Y = -4.0;
 const MASS = 1.0;
 
-const TABLE_X_MIN = -9;
-const TABLE_X_MAX = 9;
-const TABLE_Z_MIN = -16;
-const TABLE_Z_MAX = -2;
-const CEILING_Y = 12;
+const TABLE_X_MIN = -5;
+const TABLE_X_MAX = 5;
+const TABLE_Z_MIN = -14;
+const TABLE_Z_MAX = -3;
+const CEILING_Y = 6;
 
 // Thresholds for settling dice to nearest face
 const SETTLE_VEL = 0.15;
@@ -143,7 +143,7 @@ function createBodies() {
     });
     // Start as static at rest positions (hidden below view until first roll)
     body.type = CANNON.Body.STATIC;
-    body.position.set(-4 + (i % 3) * 4, FLOOR_Y + HALF_SIZE, -9 + Math.floor(i / 3) * 3);
+    body.position.set(-2 + (i % 3) * 2, FLOOR_Y + HALF_SIZE, -9 + Math.floor(i / 3) * 2);
     world.addBody(body);
     dice.push({ body, settled: true });
   }
@@ -190,18 +190,18 @@ function rollDice(indices) {
     b.wakeUp();
     d.settled = false;
 
-    // Spread spawn positions across the table width
-    const spread = count > 1 ? (j / (count - 1)) * 8 - 4 : 0;
+    // Spawn above center of visible table, spread out a bit
+    const spread = count > 1 ? (j / (count - 1)) * 4 - 2 : 0;
     b.position.set(
-      spread + (Math.random() - 0.5) * 1.5,
-      4 + Math.random() * 3,
-      -10 + (Math.random() - 0.5) * 2,
+      spread + (Math.random() - 0.5) * 0.8,
+      1 + Math.random() * 2,
+      -8 + (Math.random() - 0.5) * 1.5,
     );
 
     b.velocity.set(
-      (Math.random() - 0.5) * 6,
-      -1 + Math.random() * 2,
-      (Math.random() - 0.5) * 6,
+      (Math.random() - 0.5) * 3,
+      -2 - Math.random() * 2,
+      (Math.random() - 0.5) * 3,
     );
 
     b.quaternion.setFromEuler(
