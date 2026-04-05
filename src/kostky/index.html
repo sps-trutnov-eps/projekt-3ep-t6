@@ -1,29 +1,185 @@
-<!--
-  index.html
-  ----------
-  Simple wrapper to host the WebGL canvas and load the
-  JavaScript modules. No server-side logic; can be opened
-  directly in a browser or served by any static HTTP server.
-
-  It pulls in the glMatrix library for matrix math and then
-  starts `script.js` as a module. The `<canvas>` element with
-  id `cnv` is where the 3D cube is rendered.
--->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Render</title>
+    <title>Farkle</title>
     <script
       src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"
       integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
       crossorigin="anonymous"
       defer></script>
     <script src="script.js" type="module"></script>
-</head>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        background: #111;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #eee;
+      }
+      #game-wrapper {
+        position: relative;
+        display: inline-block;
+      }
+      #cnv {
+        display: block;
+        border-radius: 8px;
+      }
 
+      /* --- UI Overlay --- */
+      #game-ui {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 12px;
+      }
+      #game-ui * { pointer-events: auto; }
+
+      #score-bar {
+        display: flex;
+        justify-content: space-between;
+        background: rgba(0,0,0,0.6);
+        border-radius: 6px;
+        padding: 8px 16px;
+        font-size: 16px;
+      }
+      .score-label { color: #aaa; margin-right: 4px; }
+      .score-value { font-weight: bold; color: #fff; }
+      #turn-score-wrap { color: #f0c040; }
+      #turn-score-wrap .score-value { color: #f0c040; }
+
+      #status-msg {
+        text-align: center;
+        font-size: 22px;
+        font-weight: bold;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+        min-height: 32px;
+        padding: 4px;
+      }
+      #status-msg.farkle { color: #ff4444; }
+      #status-msg.win { color: #44ff44; font-size: 28px; }
+
+      #bottom-bar {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+      }
+
+      #dice-buttons {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+      }
+      .die-btn {
+        width: 48px; height: 48px;
+        border: 2px solid #555;
+        border-radius: 8px;
+        background: rgba(30,30,30,0.85);
+        color: #ddd;
+        font-size: 22px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .die-btn:hover { border-color: #888; }
+      .die-btn.selected {
+        border-color: #f0c040;
+        background: rgba(240,192,64,0.25);
+        color: #f0c040;
+      }
+      .die-btn.kept {
+        border-color: #4a4;
+        background: rgba(68,170,68,0.2);
+        color: #6c6;
+        cursor: default;
+      }
+      .die-btn:disabled {
+        opacity: 0.3;
+        cursor: default;
+      }
+
+      #actions {
+        display: flex;
+        gap: 10px;
+      }
+      #actions button {
+        padding: 8px 24px;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      #btn-roll {
+        background: #2a7fff;
+        color: #fff;
+      }
+      #btn-roll:hover:not(:disabled) { background: #1a6fef; }
+      #btn-confirm {
+        background: #f0c040;
+        color: #222;
+      }
+      #btn-confirm:hover:not(:disabled) { background: #e0b030; }
+      #btn-bank {
+        background: #4a4;
+        color: #fff;
+      }
+      #btn-bank:hover:not(:disabled) { background: #393; }
+      #actions button:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+
+      #selection-score {
+        font-size: 14px;
+        color: #f0c040;
+        min-height: 20px;
+      }
+    </style>
+</head>
 <body>
-    <canvas id="cnv" width="640" height="480"></canvas>    
+  <div id="game-wrapper">
+    <canvas id="cnv" width="640" height="480"></canvas>
+    <div id="game-ui">
+      <!-- Top: scores -->
+      <div id="score-bar">
+        <div><span class="score-label">Total:</span><span class="score-value" id="total-score">0</span></div>
+        <div id="turn-score-wrap"><span class="score-label">Turn:</span><span class="score-value" id="turn-score">0</span></div>
+      </div>
+
+      <!-- Middle: status -->
+      <div id="status-msg">Press Roll to start!</div>
+
+      <!-- Bottom: dice buttons + actions -->
+      <div id="bottom-bar">
+        <div id="dice-buttons">
+          <button class="die-btn" data-index="0" disabled>-</button>
+          <button class="die-btn" data-index="1" disabled>-</button>
+          <button class="die-btn" data-index="2" disabled>-</button>
+          <button class="die-btn" data-index="3" disabled>-</button>
+          <button class="die-btn" data-index="4" disabled>-</button>
+          <button class="die-btn" data-index="5" disabled>-</button>
+        </div>
+        <div id="selection-score"></div>
+        <div id="actions">
+          <button id="btn-roll">Roll</button>
+          <button id="btn-confirm" disabled>Confirm</button>
+          <button id="btn-bank" disabled>Bank</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
