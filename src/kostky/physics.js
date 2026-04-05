@@ -12,7 +12,6 @@ const NUM_DICE = 6;
 const HALF_SIZE = 1.0;
 const FLOOR_Y = -4.0;
 const MASS = 1.0;
-const SEED = 42;
 
 const TABLE_X_MIN = -9;
 const TABLE_X_MAX = 9;
@@ -24,16 +23,8 @@ const CEILING_Y = 12;
 const SETTLE_VEL = 0.15;
 const SETTLE_ANG_VEL = 0.3;
 
-// --- Seeded RNG (mulberry32) ---
-function mulberry32(seed) {
-  return function() {
-    seed |= 0;
-    seed = seed + 0x6D2B79F5 | 0;
-    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
+// Axis index → dice face number
+const AXIS_TO_FACE = [5, 2, 3, 4, 1, 6];
 
 // --- World setup ---
 const world = new CANNON.World({
@@ -58,66 +49,41 @@ world.addContactMaterial(new CANNON.ContactMaterial(diceMaterial, diceMaterial, 
 // --- Create walls ---
 
 // Floor
-const floorBody = new CANNON.Body({
-  mass: 0,
-  shape: new CANNON.Plane(),
-  material: wallMaterial,
-});
+const floorBody = new CANNON.Body({ mass: 0, shape: new CANNON.Plane(), material: wallMaterial });
 floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
 floorBody.position.set(0, FLOOR_Y, 0);
 world.addBody(floorBody);
 
 // Ceiling
-const ceilingBody = new CANNON.Body({
-  mass: 0,
-  shape: new CANNON.Plane(),
-  material: wallMaterial,
-});
+const ceilingBody = new CANNON.Body({ mass: 0, shape: new CANNON.Plane(), material: wallMaterial });
 ceilingBody.quaternion.setFromEuler(Math.PI / 2, 0, 0);
 ceilingBody.position.set(0, CEILING_Y, 0);
 world.addBody(ceilingBody);
 
-// Left wall (x = TABLE_X_MIN)
-const leftWall = new CANNON.Body({
-  mass: 0,
-  shape: new CANNON.Plane(),
-  material: wallMaterial,
-});
+// Left wall
+const leftWall = new CANNON.Body({ mass: 0, shape: new CANNON.Plane(), material: wallMaterial });
 leftWall.quaternion.setFromEuler(0, Math.PI / 2, 0);
 leftWall.position.set(TABLE_X_MIN, 0, 0);
 world.addBody(leftWall);
 
-// Right wall (x = TABLE_X_MAX)
-const rightWall = new CANNON.Body({
-  mass: 0,
-  shape: new CANNON.Plane(),
-  material: wallMaterial,
-});
+// Right wall
+const rightWall = new CANNON.Body({ mass: 0, shape: new CANNON.Plane(), material: wallMaterial });
 rightWall.quaternion.setFromEuler(0, -Math.PI / 2, 0);
 rightWall.position.set(TABLE_X_MAX, 0, 0);
 world.addBody(rightWall);
 
-// Back wall (z = TABLE_Z_MIN)
-const backWall = new CANNON.Body({
-  mass: 0,
-  shape: new CANNON.Plane(),
-  material: wallMaterial,
-});
+// Back wall
+const backWall = new CANNON.Body({ mass: 0, shape: new CANNON.Plane(), material: wallMaterial });
 backWall.position.set(0, 0, TABLE_Z_MIN);
 world.addBody(backWall);
 
-// Front wall (z = TABLE_Z_MAX)
-const frontWall = new CANNON.Body({
-  mass: 0,
-  shape: new CANNON.Plane(),
-  material: wallMaterial,
-});
+// Front wall
+const frontWall = new CANNON.Body({ mass: 0, shape: new CANNON.Plane(), material: wallMaterial });
 frontWall.quaternion.setFromEuler(0, Math.PI, 0);
 frontWall.position.set(0, 0, TABLE_Z_MAX);
 world.addBody(frontWall);
 
-// --- Snap-to-face: find which local axis is closest to world-up,
-// then build a target quat that corrects only the tilt (preserves yaw) ---
+// --- Snap-to-face helpers ---
 const LOCAL_AXES = [
   new CANNON.Vec3(1, 0, 0),
   new CANNON.Vec3(-1, 0, 0),
@@ -129,7 +95,6 @@ const LOCAL_AXES = [
 const WORLD_UP = new CANNON.Vec3(0, 1, 0);
 
 function nearestFaceQuat(q) {
-  // Find which local axis, rotated by q, is closest to world-up
   let bestDot = -2;
   let bestLocal = LOCAL_AXES[0];
   for (const axis of LOCAL_AXES) {
@@ -141,43 +106,32 @@ function nearestFaceQuat(q) {
     }
   }
 
-  // Current world direction of that axis
   const current = q.vmult(bestLocal);
-
-  // Rotation from current to world-up (shortest arc)
   const cross = new CANNON.Vec3();
   current.cross(WORLD_UP, cross);
   const crossLen = cross.length();
 
-  if (crossLen < 1e-6) {
-    // Already aligned
-    return q.clone();
-  }
+  if (crossLen < 1e-6) return q.clone();
 
   const dot = current.dot(WORLD_UP);
   const angle = Math.atan2(crossLen, dot);
-  cross.scale(1 / crossLen, cross); // normalize axis
+  cross.scale(1 / crossLen, cross);
 
   const correction = new CANNON.Quaternion();
   correction.setFromAxisAngle(cross, angle);
-
-  // Apply correction to current quaternion: corrected = correction * q
   const result = correction.mult(q);
   result.normalize();
   return result;
 }
 
-// --- Create dice ---
+// --- Dice state ---
 let dice = [];
-let initialized = false;
+let bodiesCreated = false;
 
-function initDice() {
-  const rng = mulberry32(SEED);
-  const diceShape = new CANNON.Box(new CANNON.Vec3(HALF_SIZE, HALF_SIZE, HALF_SIZE));
+const diceShape = new CANNON.Box(new CANNON.Vec3(HALF_SIZE, HALF_SIZE, HALF_SIZE));
 
+function createBodies() {
   for (let i = 0; i < NUM_DICE; i++) {
-    const col = i % 3;
-    const row = Math.floor(i / 3);
     const body = new CANNON.Body({
       mass: MASS,
       shape: diceShape,
@@ -187,63 +141,131 @@ function initDice() {
       sleepSpeedLimit: 0.1,
       sleepTimeLimit: 1.0,
     });
-
-    // Spread dice out more to reduce stacking
-    body.position.set(
-      -4 + col * 4 + (rng() - 0.5) * 0.5,
-      3 + row * 2.5 + rng() * 2,
-      -10 + (rng() - 0.5) * 2,
-    );
-
-    body.velocity.set(
-      (rng() - 0.5) * 6,
-      -1 + rng() * 2,
-      (rng() - 0.5) * 6,
-    );
-
-    body.quaternion.setFromEuler(
-      rng() * Math.PI * 2,
-      rng() * Math.PI * 2,
-      rng() * Math.PI * 2,
-    );
-
-    body.angularVelocity.set(
-      (rng() - 0.5) * 15,
-      (rng() - 0.5) * 15,
-      (rng() - 0.5) * 15,
-    );
-
+    // Start as static at rest positions (hidden below view until first roll)
+    body.type = CANNON.Body.STATIC;
+    body.position.set(-4 + (i % 3) * 4, FLOOR_Y + HALF_SIZE, -9 + Math.floor(i / 3) * 3);
     world.addBody(body);
-    dice.push({ body, settled: false });
+    dice.push({ body, settled: true });
   }
-  initialized = true;
+  bodiesCreated = true;
+}
+
+// --- Public API ---
+
+function rollAllDice() {
+  if (!bodiesCreated) createBodies();
+  const indices = [];
+  for (let i = 0; i < NUM_DICE; i++) indices.push(i);
+  // Reset all to dynamic first
+  for (const d of dice) {
+    d.body.type = CANNON.Body.DYNAMIC;
+    d.body.mass = MASS;
+    d.body.updateMassProperties();
+  }
+  rollDice(indices);
+}
+
+function rollDice(indices) {
+  if (!bodiesCreated) createBodies();
+
+  // Freeze dice NOT being rolled
+  for (let i = 0; i < NUM_DICE; i++) {
+    if (!indices.includes(i)) {
+      dice[i].body.type = CANNON.Body.STATIC;
+      dice[i].body.velocity.set(0, 0, 0);
+      dice[i].body.angularVelocity.set(0, 0, 0);
+    }
+  }
+
+  // Launch the dice being rolled
+  const count = indices.length;
+  for (let j = 0; j < count; j++) {
+    const i = indices[j];
+    const d = dice[i];
+    const b = d.body;
+
+    b.type = CANNON.Body.DYNAMIC;
+    b.mass = MASS;
+    b.updateMassProperties();
+    b.wakeUp();
+    d.settled = false;
+
+    // Spread spawn positions across the table width
+    const spread = count > 1 ? (j / (count - 1)) * 8 - 4 : 0;
+    b.position.set(
+      spread + (Math.random() - 0.5) * 1.5,
+      4 + Math.random() * 3,
+      -10 + (Math.random() - 0.5) * 2,
+    );
+
+    b.velocity.set(
+      (Math.random() - 0.5) * 6,
+      -1 + Math.random() * 2,
+      (Math.random() - 0.5) * 6,
+    );
+
+    b.quaternion.setFromEuler(
+      Math.random() * Math.PI * 2,
+      Math.random() * Math.PI * 2,
+      Math.random() * Math.PI * 2,
+    );
+
+    b.angularVelocity.set(
+      (Math.random() - 0.5) * 15,
+      (Math.random() - 0.5) * 15,
+      (Math.random() - 0.5) * 15,
+    );
+  }
+}
+
+function getUpAxisIndex(q) {
+  let bestDot = -2;
+  let bestIdx = 0;
+  for (let i = 0; i < LOCAL_AXES.length; i++) {
+    const worldAxis = q.vmult(LOCAL_AXES[i]);
+    const d = worldAxis.dot(WORLD_UP);
+    if (d > bestDot) {
+      bestDot = d;
+      bestIdx = i;
+    }
+  }
+  return bestIdx;
+}
+
+function getDiceValues() {
+  return dice.map(d => AXIS_TO_FACE[getUpAxisIndex(d.body.quaternion)]);
+}
+
+function allSettled() {
+  if (!bodiesCreated) return false;
+  return dice.every(d => d.settled);
 }
 
 function loop(dt) {
-  if (!initialized) initDice();
+  if (!bodiesCreated) createBodies();
   if (dt > 0.1) dt = 0.016;
 
   world.step(1 / 60, dt, 5);
 
   // Post-step: snap nearly-still dice to nearest face
   for (const d of dice) {
+    if (d.settled) continue;
     const b = d.body;
+    if (b.type === CANNON.Body.STATIC) continue;
+
     const speed = b.velocity.length();
     const angSpeed = b.angularVelocity.length();
 
-    if (!d.settled && speed < SETTLE_VEL && angSpeed < SETTLE_ANG_VEL) {
+    if (speed < SETTLE_VEL && angSpeed < SETTLE_ANG_VEL) {
       const target = nearestFaceQuat(b.quaternion);
-      // Slerp towards the nearest clean face orientation
       b.quaternion.x += (target.x - b.quaternion.x) * 0.15;
       b.quaternion.y += (target.y - b.quaternion.y) * 0.15;
       b.quaternion.z += (target.z - b.quaternion.z) * 0.15;
       b.quaternion.w += (target.w - b.quaternion.w) * 0.15;
       b.quaternion.normalize();
 
-      // Kill residual angular velocity
       b.angularVelocity.scale(0.85, b.angularVelocity);
 
-      // Mark as fully settled once very close
       const dotVal = Math.abs(
         b.quaternion.x * target.x + b.quaternion.y * target.y +
         b.quaternion.z * target.z + b.quaternion.w * target.w
@@ -263,4 +285,4 @@ function loop(dt) {
   }));
 }
 
-export { loop, dice };
+export { loop, dice, rollAllDice, rollDice, getDiceValues, allSettled, NUM_DICE };
