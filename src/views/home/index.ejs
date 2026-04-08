@@ -1,12 +1,11 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title><%= title %></title>
-</head>
-<body>
-  <h1><%= message %></h1>
-  <p><a href="/kostky/index.html">Kostky</a></p>
-</body>
-</html>
+<%- include('../partials/header') %>
 
-<%# Tady (EJS soubory) uz se ta data jen iteruji jako Users.forEach(...) %>
+<div class="container">
+    <h1><%= message %></h1>
+
+    <div class="home-intro">
+        <p>Dice Game je hra na způsob Farklu — házejte kostkami, sbírejte body a jako první dostaňte 10 000. Žádné fyzické kostky, žádné domlouvání schůzky s kamarádem. Hrajte proti počítači nebo výzvu přijměte s přítelem online.</p>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,84 @@
+/* Center the whole thing */
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80vh;
+}
+
+/* Card look */
+.auth-card {
+    background: #ffffff;
+    padding: 40px;
+    width: 350px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Title */
+.auth-card h1 {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+/* Form groups */
+.form-auth-div {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+}
+
+/* Labels */
+.form-auth-div label {
+    font-size: 1em;
+    margin-bottom: 6px;
+}
+
+/* Inputs */
+.form-auth-div input {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1em;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+/* Input focus effect */
+.form-auth-div input:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 5px rgba(74, 144, 226, 0.4);
+}
+
+/* Error message */
+.form-auth-div span {
+    color: red;
+    font-size: 0.9em;
+    margin-top: 4px;
+}
+
+/* Button */
+.auth-button {
+    width: 100%;
+    padding: 12px;
+    background: #cf763b;
+    color: #f5efe8;
+    border: 2px solid #b4901e;
+    font-family: 'MedievalSharp', serif;
+    font-size: 1em;
+    text-shadow: 1px 1px 0px #7f3004;
+    box-shadow: 2px 2px 0px #7f3004;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.auth-button:hover {
+    background: #7f3004;
+    box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+}
+
+.auth-button:active {
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5);
+    transform: translateY(2px);
+}

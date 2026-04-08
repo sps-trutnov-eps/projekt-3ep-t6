@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title || 'Dice game' %></title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=MedievalSharp&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="/">🎲 Dice Game</a>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="/">Domů</a></li>
+                <% if (user) { %>
+                <li><a href="/friends">Přátelé</a></li>
+                <% } %>
+                <li><a href="/matchmaking">Matchmaking</a></li>
+                <li><a href="/stats">Statistiky</a></li>
+                <li><a href="/kostky/index.html">Kostky</a></li>
+
+                <% if (user) { %> 
+                <li>
+                    <form method="post" action="/auth/logout" style="margin: 0; padding: 0; display: flex; align-items: center;">
+                        <button type="submit" style="all: unset; cursor: pointer; color: #ecf0f1; font-size: 20px; padding: 10px; transition: color 0.3s;">Odhlásit</button>
+                    </form>
+                </li>
+                <% } else { %>
+                    <li><a href="/auth/login">Přihlásit se</a></li>
+                    <li><a href="/auth/register">Registrace</a></li>
+                <% } %>
+            </ul>
+        </div>
+    </nav>

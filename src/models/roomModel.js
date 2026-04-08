@@ -1,9 +1,6 @@
 const db = require('../db');
 
 class Room {
-  /**
-   * Inicializace tabulky rooms
-   */
   static async createTable() {
     const sql = `
       CREATE TABLE IF NOT EXISTS rooms (
@@ -11,20 +8,17 @@ class Room {
         creator_id INTEGER REFERENCES users(id),
         player2_id INTEGER REFERENCES users(id),
         game_id INTEGER REFERENCES games(id),
-        room_type VARCHAR(10) DEFAULT 'PUBLIC', -- 'PUBLIC' nebo 'PRIVATE'
+        room_type VARCHAR(10) DEFAULT 'PRIVATE',
         invite_code VARCHAR(5) UNIQUE,
-        status VARCHAR(20) DEFAULT 'WAITING', -- 'WAITING', 'IN_GAME', 'FINISHED'
+        status VARCHAR(20) DEFAULT 'WAITING',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
     return db.query(sql);
   }
 
-  /**
-   * Vygeneruje náhodný 5-písmenný kód pro roomku
-   */
   static generateCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code = '';
     for (let i = 0; i < 5; i++) {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -32,15 +26,22 @@ class Room {
     return code;
   }
 
-  /**
-   * Vytvoří novou roomku
-   * @param {number} creatorId - ID uživatele, který roomku vytváří
-   * @param {boolean} isPrivate - true pro soukromou roomku, false pro veřejnou
-   */
-  static async create(creatorId, isPrivate = false) {
+  // Generuje kod dokud nenajde unikatni
+  static async generateUniqueCode() {
+    let code;
+    let exists = true;
+    while (exists) {
+      code = this.generateCode();
+      const { rows } = await db.query('SELECT id FROM rooms WHERE invite_code = $1', [code]);
+      exists = rows.length > 0;
+    }
+    return code;
+  }
+
+  static async create(creatorId, isPrivate = true) {
     const roomType = isPrivate ? 'PRIVATE' : 'PUBLIC';
-    const inviteCode = this.generateCode();
-    
+    const inviteCode = await this.generateUniqueCode();
+
     const sql = `
       INSERT INTO rooms (creator_id, room_type, invite_code)
       VALUES ($1, $2, $3)
@@ -50,16 +51,24 @@ class Room {
     return rows[0];
   }
 
-  /**
-   * Vrátí seznam všech veřejných roomek čekajících na hráče
-   * Včetně info o creatorovi (jméno)
-   */
+  static async setVisibility(roomId, isPublic) {
+    const sql = `
+      UPDATE rooms
+      SET room_type = $2
+      WHERE id = $1
+      RETURNING *;
+    `;
+    const roomType = isPublic ? 'PUBLIC' : 'PRIVATE';
+    const { rows } = await db.query(sql, [roomId, roomType]);
+    return rows[0];
+  }
+
   static async listPublic() {
     const sql = `
-      SELECT r.*, u.first_name, u.last_name 
+      SELECT r.*, u.username
       FROM rooms r
       JOIN users u ON r.creator_id = u.id
-      WHERE r.room_type = 'PUBLIC' 
+      WHERE r.room_type = 'PUBLIC'
       AND r.status = 'WAITING'
       ORDER BY r.created_at DESC;
     `;
@@ -67,29 +76,9 @@ class Room {
     return rows;
   }
 
-  /**
-   * Připojí druhého hráče do roomky
-   * Změní status na 'READY' (oba hráči jsou připojeni)
-   */
-  static async join(roomId, playerId) {
-    const sql = `
-      UPDATE rooms
-      SET player2_id = $2,
-          status = 'READY'
-      WHERE id = $1 
-      AND player2_id IS NULL
-      RETURNING *;
-    `;
-    const { rows } = await db.query(sql, [roomId, playerId]);
-    return rows[0];
-  }
-
-  /**
-   * Najde roomku podle invite kódu (pro private roomky)
-   */
   static async findByCode(code) {
     const sql = `
-      SELECT r.*, u.first_name, u.last_name 
+      SELECT r.*, u.username
       FROM rooms r
       JOIN users u ON r.creator_id = u.id
       WHERE r.invite_code = $1;
@@ -98,23 +87,26 @@ class Room {
     return rows[0];
   }
 
-  /**
-   * Najde roomku podle ID
-   */
   static async findById(roomId) {
     const { rows } = await db.query('SELECT * FROM rooms WHERE id = $1', [roomId]);
     return rows[0];
   }
 
-  /**
-   * Spustí hru z roomky
-   * Nastaví game_id a změní status na 'IN_GAME'
-   */
+  static async join(roomId, playerId) {
+    const sql = `
+      UPDATE rooms
+      SET player2_id = $2, status = 'READY'
+      WHERE id = $1 AND player2_id IS NULL
+      RETURNING *;
+    `;
+    const { rows } = await db.query(sql, [roomId, playerId]);
+    return rows[0];
+  }
+
   static async startGame(roomId, gameId) {
     const sql = `
       UPDATE rooms
-      SET game_id = $2,
-          status = 'IN_GAME'
+      SET game_id = $2, status = 'IN_GAME'
       WHERE id = $1
       RETURNING *;
     `;
@@ -122,9 +114,6 @@ class Room {
     return rows[0];
   }
 
-  /**
-   * Ukončí roomku (po skončení hry)
-   */
   static async finish(roomId) {
     const sql = `
       UPDATE rooms
@@ -136,10 +125,6 @@ class Room {
     return rows[0];
   }
 
-  /**
-   * Smaže staré roomky (cleanup)
-   * Například roomky starší než 1 hodinu, které jsou stále ve WAITING
-   */
   static async cleanupOld(hoursOld = 1) {
     const sql = `
       DELETE FROM rooms

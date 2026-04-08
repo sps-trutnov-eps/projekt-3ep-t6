@@ -4,16 +4,19 @@
   "description": "Sem patří umístit package (tzn. v této složce bude `package.json` soubor).",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon app.js",
-    "start": "node app.js"
+    "build:shared": "cp shared/scoreEngine.js public/js/game/scoreEngine.js",
+    "dev": "npm run build:shared && nodemon -e js,ejs app.js",
+    "start": "npm run build:shared && node app.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "ejs": "^4.0.1",
     "express": "^5.2.1",
+    "express-session": "^1.19.0",
     "pg": "^8.18.0"
   },
   "devDependencies": {

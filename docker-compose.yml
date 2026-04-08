@@ -13,6 +13,15 @@ services:
       db:
         condition: service_healthy
     restart: on-failure
+    develop:
+      watch:
+        - action: sync
+          path: ./src 
+          target: /app
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./src/package.json
   
   db:
     image: postgres:18-alpine
