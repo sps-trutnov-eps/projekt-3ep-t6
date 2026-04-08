@@ -1,6 +1,7 @@
 const Room = require('../models/roomModel');
 const Friend = require('../models/friendModel');
 const Invitation = require('../models/invitationModel');
+const Game = require('../models/hraModel');
 
 exports.getMatchmakingPage = (req, res) => {
   res.render('matchmaking/index', {
@@ -165,4 +166,35 @@ exports.sendInvite = async (req, res) => {
         console.error('sendInvite error:', err);
         res.status(500).json({ error: 'Chyba serveru při odesílání pozvánky' });
     }
+};
+
+// Polling
+exports.getRoomStatus = async (req, res) => {
+  try {
+    if (!req.session.user) return res.status(401).json({ error: 'Nejsi přihlášen' });
+    const room = await Room.findById(req.params.roomId);
+    if (!room) return res.status(404).json({ error: 'Místnost nenalezena' });
+    res.json({ success: true, status: room.status, gameId: room.game_id });
+  } catch (err) {
+    console.error('getRoomStatus error:', err);
+    res.status(500).json({ error: 'Chyba serveru' });
+  }
+};
+
+exports.startGame = async (req, res) => {
+  try {
+    if (!req.session.user) return res.status(401).json({ error: 'Nejsi přihlášen' });
+    const room = await Room.findById(req.body.roomId);
+    if (!room) return res.status(404).json({ error: 'Místnost nenalezena' });
+    if (room.creator_id !== req.session.user.id) return res.status(403).json({ error: 'Nejsi tvůrce' });
+    if (room.status !== 'READY') return res.status(400).json({ error: 'Čeká se na druhého hráče' });
+
+    const game = await Game.create(room.creator_id, room.player2_id);
+    await Room.startGame(room.id, game.id);
+
+    res.json({ success: true, gameId: game.id });
+  } catch (err) {
+    console.error('startGame error:', err);
+    res.status(500).json({ error: 'Chyba serveru' });
+  }
 };
