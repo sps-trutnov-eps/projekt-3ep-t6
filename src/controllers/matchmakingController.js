@@ -198,3 +198,32 @@ exports.startGame = async (req, res) => {
     res.status(500).json({ error: 'Chyba serveru' });
   }
 };
+
+// Čekací stránka pro joineera
+exports.getWaitingPage = async (req, res) => {
+  try {
+    const room = await Room.findByCode(req.params.code);
+    if (!room) return res.redirect('/matchmaking/lobby');
+
+    res.render('matchmaking/waiting', {
+      title: 'Čekám na hru',
+      roomCode: room.invite_code,
+    });
+  } catch (err) {
+    console.error('getWaitingPage error:', err);
+    res.redirect('/matchmaking/lobby');
+  }
+};
+
+// joineer se ptá jestli tvůrce spustil hru
+exports.waitForGame = async (req, res) => {
+  try {
+    if (!req.session.user) return res.status(401).json({ error: 'Nejsi přihlášen' });
+    const room = await Room.findByCode(req.params.code);
+    if (!room) return res.status(404).json({ error: 'Místnost nenalezena' });
+    res.json({ success: true, status: room.status, gameId: room.game_id });
+  } catch (err) {
+    console.error('waitForGame error:', err);
+    res.status(500).json({ error: 'Chyba serveru' });
+  }
+};
