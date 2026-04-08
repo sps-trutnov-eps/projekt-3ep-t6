@@ -23,25 +23,20 @@ function initPositionBuffer(gl) {
   // operations to from here out.
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
-  // Now create an array of positions for the square.
+  const S = 0.9; // half-size (10% smaller than original 1.0)
   const positions = [
   // Front face
-  -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0,
-
+  -S, -S, S, S, -S, S, S, S, S, -S, S, S,
   // Back face
-  -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0,
-
+  -S, -S, -S, -S, S, -S, S, S, -S, S, -S, -S,
   // Top face
-  -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0,
-
+  -S, S, -S, -S, S, S, S, S, S, S, S, -S,
   // Bottom face
-  -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, -1.0, -1.0, 1.0,
-
+  -S, -S, -S, S, -S, -S, S, -S, S, -S, -S, S,
   // Right face
-  1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0,
-
+  S, -S, -S, S, S, -S, S, S, S, S, -S, S,
   // Left face
-  -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0,
+  -S, -S, -S, -S, -S, S, -S, S, S, -S, S, -S,
 ];
 
   // Now pass the list of positions into WebGL to build the
@@ -174,10 +169,10 @@ function initTableBuffers(gl) {
 
   // Flat quad in the XYZ plane, 12 wide x 8 deep
   const positions = [
-    -10.0, 0.0, -4000000.0,
-     10.0, 0.0, -4000000.0,
-     10.0, 0.0,  4.0,
-    -10.0, 0.0,  4.0,
+    -10.0, 0.0, -20.0,
+     10.0, 0.0, -20.0,
+     10.0, 0.0,   4.0,
+    -10.0, 0.0,   4.0,
   ];
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 

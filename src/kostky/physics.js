@@ -9,7 +9,7 @@ import * as CANNON from './node_modules/cannon-es/dist/cannon-es.js';
 
 // --- Constants ---
 const NUM_DICE = 6;
-const HALF_SIZE = 1.0;
+const HALF_SIZE = 0.9;
 const FLOOR_Y = -4.0;
 const MASS = 1.0;
 
