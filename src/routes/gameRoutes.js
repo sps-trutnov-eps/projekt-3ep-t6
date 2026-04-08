@@ -14,4 +14,10 @@ router.post('/roll', gameController.postThrowDice);
 router.post('/select', gameController.postSelectDice);
 router.post('/bank', gameController.postBankPoints);
 
+router.get('/multiplayer/:gameId', gameController.getMultiplayer);
+router.get('/multiplayer/:gameId/state', gameController.getMultiplayerState);
+router.post('/multiplayer/:gameId/roll', gameController.postMultiplayerRoll);
+router.post('/multiplayer/:gameId/select', gameController.postMultiplayerSelect);
+router.post('/multiplayer/:gameId/bank', gameController.postMultiplayerBank);
+
 module.exports = router;

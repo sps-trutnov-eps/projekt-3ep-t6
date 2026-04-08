@@ -1,0 +1,63 @@
+<%- include('../partials/header') %>
+
+<span style="display:none;" id="player-id"><%=  userId %></span>
+<span style="display:none;" id="game-id"><%= gameId %></span>
+<script src="/js/game/multiplayer.js" defer></script>
+
+<div class="container">
+    <div class="game-wrapper">
+        <h1>Multiplayer</h1>
+
+        <div id="game-finished" style="display:none;">
+            <div class="finished-banner">
+                <p id="finished-text">Hra skončila!</p>
+            </div>
+            <a href="/matchmaking/lobby">
+                <button class="btn-primary" style="margin-top:1rem;">Zpět do lobby</button>
+            </a>
+        </div>
+
+        <div class="game-layout">
+
+            <div class="game-left">
+                <div class="game-state">
+                    <p>Hrajete proti: <strong><span id="opponent-name">…</span></strong></p>
+                    <p>Vaše skóre: <span id="player-score">0</span></p>
+                    <p>Skóre soupeře: <span id="opponent-score">0</span></p>
+                    <p>Cíl: <span>10 000</span></p>
+                    <p style="margin-top:0.5rem;" id="turn-indicator"></p>
+                </div>
+
+                <div class="game-board">
+                    <p>Body na stole: <span id="turn-score">0</span></p>
+
+                    <div id="selection-score-row" class="score-row" style="display:none;">
+                        <span>Body za výběr:</span>
+                        <span id="selection-score" class="score-highlight">0</span>
+                    </div>
+
+                    <div id="bust-msg" class="bust-message" style="display:none;">
+                        Farkle! Přišel jsi o body v tomto kole.
+                    </div>
+                </div>
+
+                <div id="action-area" class="action-area">
+                    <button id="btn-roll"    class="btn-primary"   onclick="rollDice()">Hodit kostkami</button>
+                    <button id="btn-confirm" class="btn-primary"   onclick="confirmSelection()" style="display:none;" disabled>Potvrdit výběr</button>
+                    <button id="btn-reroll"  class="btn-secondary" onclick="rerollDice()"       style="display:none;">Hodit znovu</button>
+                    <button id="btn-bank"    class="btn-secondary" onclick="bankPoints()"        style="display:none;">Bankovat</button>
+                </div>
+            </div>
+
+            <div class="game-right">
+                <div class="game-board">
+                    <p>Zbývající kostky: <span id="dice-left-count">6</span></p>
+                    <div id="dice-area" class="dice-area"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

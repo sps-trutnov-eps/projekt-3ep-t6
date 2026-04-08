@@ -102,28 +102,20 @@ class Game {
      * - Resetuje se počet kostek na 6
      */
     static async bust(gameId, nextPlayerId, rollValues) {
-        const sql = `
-            UPDATE games
-            SET turn_score = 0,
-                dice_left = 6,
-                current_turn_id = $2,
-                last_roll = $3
-            WHERE id = $1
-            RETURNING *;
+    const sql = `
+        UPDATE games
+        SET turn_score = 0,
+            dice_left = 6,
+            current_turn_id = $2,
+            last_roll = '[]'
+        WHERE id = $1
+        RETURNING *;
         `;
-        const { rows } = await db.query(sql, [gameId, nextPlayerId, JSON.stringify(rollValues)]);
+        const { rows } = await db.query(sql, [gameId, nextPlayerId]);
         return rows[0];
     }
 
-    /**
-     * Bank - Hráč se rozhodl uložit body a předat tah
-     * - Body z 'turn_score' se přičtou k jeho celkovému skóre (p1_score nebo p2_score)
-     * - Resetuje se turn_score na 0
-     * - Tah se předá soupeři
-     * - Reset kostek na 6
-     */
     static async bankPoints(gameId, playerId, nextPlayerId) {
-        // Nejdřív zjistíme, jestli je to player1 nebo player2, abychom věděli, kam přičíst
         const game = await this.findById(gameId);
         if (!game) throw new Error('Game not found');
 
@@ -136,14 +128,14 @@ class Game {
             throw new Error('Player not in this game');
         }
 
-        // Dynamicky sestavíme query podle toho, komu přičítáme
         const sql = `
             UPDATE games
             SET 
                 ${columnToUpdate} = ${columnToUpdate} + turn_score,
                 turn_score = 0,
                 dice_left = 6,
-                current_turn_id = $2
+                current_turn_id = $2,
+                last_roll = '[]'
             WHERE id = $1
             RETURNING *;
         `;
