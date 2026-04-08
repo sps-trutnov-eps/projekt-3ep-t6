@@ -260,7 +260,25 @@ async function confirmSelection() {
         if (!data.success) return alert(data.error);
 
         gameState = data.gameState;
-        renderState(gameState);
+
+        // Po potvrzení výběru — zobraz zbývající kostky a tlačítka pro další akci
+        const remaining = gameState.dice_left;
+        renderDiceEmpty(remaining);
+        selectedDice = [];
+        document.getElementById('selection-score-row').style.display = 'none';
+        document.getElementById('turn-score').textContent = gameState.turn_score;
+
+        // Zobraz hodit znovu + bankovat
+        document.getElementById('btn-roll').style.display    = 'none';
+        document.getElementById('btn-confirm').style.display = 'none';
+        document.getElementById('btn-reroll').style.display  = 'block';
+        document.getElementById('btn-bank').style.display    = 'block';
+
+        // Pokud hra skončila
+        if (gameState.status === 'FINISHED') {
+            renderState(gameState);
+        }
+
     } catch (err) {
         console.error('confirmSelection error:', err);
     }
