@@ -210,4 +210,77 @@ function initTableBuffers(gl) {
   };
 }
 
-export { initBuffers, initTableBuffers };
+// Creates a box mesh centered at origin with given half-extents
+function createBoxBuffers(gl, hx, hy, hz) {
+  const positionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  const p = [
+    // Front
+    -hx,-hy, hz,  hx,-hy, hz,  hx, hy, hz, -hx, hy, hz,
+    // Back
+    -hx,-hy,-hz, -hx, hy,-hz,  hx, hy,-hz,  hx,-hy,-hz,
+    // Top
+    -hx, hy,-hz, -hx, hy, hz,  hx, hy, hz,  hx, hy,-hz,
+    // Bottom
+    -hx,-hy,-hz,  hx,-hy,-hz,  hx,-hy, hz, -hx,-hy, hz,
+    // Right
+     hx,-hy,-hz,  hx, hy,-hz,  hx, hy, hz,  hx,-hy, hz,
+    // Left
+    -hx,-hy,-hz, -hx,-hy, hz, -hx, hy, hz, -hx, hy,-hz,
+  ];
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(p), gl.STATIC_DRAW);
+
+  const normalBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+  const n = [
+    0,0,1, 0,0,1, 0,0,1, 0,0,1,
+    0,0,-1, 0,0,-1, 0,0,-1, 0,0,-1,
+    0,1,0, 0,1,0, 0,1,0, 0,1,0,
+    0,-1,0, 0,-1,0, 0,-1,0, 0,-1,0,
+    1,0,0, 1,0,0, 1,0,0, 1,0,0,
+    -1,0,0, -1,0,0, -1,0,0, -1,0,0,
+  ];
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(n), gl.STATIC_DRAW);
+
+  const textureCoordBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
+  const tc = [];
+  for (let i = 0; i < 6; i++) tc.push(0,0, 1,0, 1,1, 0,1);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tc), gl.STATIC_DRAW);
+
+  const indexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+  const idx = [];
+  for (let i = 0; i < 6; i++) {
+    const o = i * 4;
+    idx.push(o,o+1,o+2, o,o+2,o+3);
+  }
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(idx), gl.STATIC_DRAW);
+
+  return { position: positionBuffer, normal: normalBuffer, textureCoord: textureCoordBuffer, indices: indexBuffer, vertexCount: 36 };
+}
+
+// Frame = 4 walls forming a square tray around the dice area
+// Physics walls: X +-5, Z -14 to -3. Frame slightly inside.
+function initFrameBuffers(gl) {
+  const WALL_H = 0.6;    // wall height
+  const WALL_T = 0.25;   // wall thickness
+  const X = 4.8;          // half-width of inner area
+  const Z_MIN = -13.5;
+  const Z_MAX = -3.5;
+  const Z_MID = (Z_MIN + Z_MAX) / 2;
+  const Z_HALF = (Z_MAX - Z_MIN) / 2;
+
+  return {
+    // Left wall: runs along Z, at X = -X
+    left:  { buffers: createBoxBuffers(gl, WALL_T, WALL_H, Z_HALF + WALL_T), pos: [-X - WALL_T, WALL_H, Z_MID] },
+    // Right wall
+    right: { buffers: createBoxBuffers(gl, WALL_T, WALL_H, Z_HALF + WALL_T), pos: [X + WALL_T, WALL_H, Z_MID] },
+    // Back wall: runs along X, at Z = Z_MIN
+    back:  { buffers: createBoxBuffers(gl, X + WALL_T * 2, WALL_H, WALL_T), pos: [0, WALL_H, Z_MIN - WALL_T] },
+    // Front wall
+    front: { buffers: createBoxBuffers(gl, X + WALL_T * 2, WALL_H, WALL_T), pos: [0, WALL_H, Z_MAX + WALL_T] },
+  };
+}
+
+export { initBuffers, initTableBuffers, initFrameBuffers };

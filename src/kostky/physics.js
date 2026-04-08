@@ -152,21 +152,25 @@ function createBodies() {
 
 // --- Public API ---
 
-function rollAllDice() {
+// side: 'near' = player's half (closer to camera), 'far' = AI's half (far end)
+function rollAllDice(side) {
   if (!bodiesCreated) createBodies();
   const indices = [];
   for (let i = 0; i < NUM_DICE; i++) indices.push(i);
-  // Reset all to dynamic first
   for (const d of dice) {
     d.body.type = CANNON.Body.DYNAMIC;
     d.body.mass = MASS;
     d.body.updateMassProperties();
   }
-  rollDice(indices);
+  rollDice(indices, side);
 }
 
-function rollDice(indices) {
+function rollDice(indices, side) {
   if (!bodiesCreated) createBodies();
+  side = side || 'near';
+
+  // Z center for each side of the table
+  const zCenter = side === 'far' ? -12 : -5;
 
   // Freeze dice NOT being rolled
   for (let i = 0; i < NUM_DICE; i++) {
@@ -190,12 +194,12 @@ function rollDice(indices) {
     b.wakeUp();
     d.settled = false;
 
-    // Spawn spread out with staggered heights to prevent stacking
-    const spread = count > 1 ? (j / (count - 1)) * 6 - 3 : 0;
+    // Spawn spread out with staggered heights
+    const spread = count > 1 ? (j / (count - 1)) * 5 - 2.5 : 0;
     b.position.set(
       spread + (Math.random() - 0.5) * 0.5,
       2 + j * 1.5 + Math.random() * 0.5,
-      -8 + (Math.random() - 0.5) * 1.0,
+      zCenter + (Math.random() - 0.5) * 1.5,
     );
 
     b.velocity.set(

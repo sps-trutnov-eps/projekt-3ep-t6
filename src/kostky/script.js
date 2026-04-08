@@ -4,7 +4,7 @@
   Entry point — WebGL setup, render loop, and game UI orchestration.
   Handles both human and AI turns with visual dice rolling.
 */
-import { initBuffers, initTableBuffers } from "./init-buffers.js";
+import { initBuffers, initTableBuffers, initFrameBuffers } from "./init-buffers.js";
 import { drawScene } from "./draw.js";
 import { loop, rollAllDice, rollDice, getDiceValues, allSettled, NUM_DICE } from "./physics.js";
 import * as game from "./game.js";
@@ -13,10 +13,12 @@ import * as game from "./game.js";
 const cnv = document.getElementById("cnv");
 const gl = cnv.getContext("webgl");
 
+// Pixelation: render at a fraction of container size, CSS stretches it up
+const PIXEL_SCALE = 3; // 1/3 resolution for chunky pixel look
 function resizeCanvas() {
   const rect = cnv.parentElement.getBoundingClientRect();
-  const w = Math.floor(rect.width);
-  const h = Math.floor(rect.height);
+  const w = Math.floor(rect.width / PIXEL_SCALE);
+  const h = Math.floor(rect.height / PIXEL_SCALE);
   if (cnv.width !== w || cnv.height !== h) {
     cnv.width = w;
     cnv.height = h;
@@ -128,6 +130,7 @@ function isPowerOf2(value) { return (value & (value - 1)) === 0; }
 
 const buffers = initBuffers(gl);
 const tableBuffers = initTableBuffers(gl);
+const frameWalls = initFrameBuffers(gl);
 const texture = loadTexture(gl, "cubetexture.png");
 const tableTexture = loadTexture(gl, "WoodTexture.jpg");
 gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -225,11 +228,12 @@ function postConfirmUI() {
 // --- Helper: trigger a roll (human or AI) ---
 function triggerRoll() {
   const s = game.getState();
+  const side = s.currentPlayer === 'ai' ? 'far' : 'near';
   const indices = game.startRoll();
   if (indices.length === 0 || indices.length === 6) {
-    rollAllDice();
+    rollAllDice(side);
   } else {
-    rollDice(indices);
+    rollDice(indices, side);
   }
   settleHandled = false;
   disableAllButtons();
@@ -384,7 +388,14 @@ function render(now) {
     drawScene(gl, programInfo, buffers, texture, d.quat, d.pos);
   }
 
+  // Draw table
   drawScene(gl, programInfo, tableBuffers, tableTexture, [0, 0, 0], [0, -4, -8]);
+
+  // Draw frame walls (positioned at table surface Y=-4)
+  for (const wall of Object.values(frameWalls)) {
+    drawScene(gl, programInfo, wall.buffers, tableTexture, [0, 0, 0],
+      [wall.pos[0], -4 + wall.pos[1], wall.pos[2]]);
+  }
 
   // Settle detection — handles both human and AI
   if (!settleHandled && allSettled()) {
