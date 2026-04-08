@@ -75,6 +75,7 @@
       #canvas-area {
         flex: 1;
         min-height: 0;
+        position: relative;
       }
       #cnv {
         width: 100%;
@@ -114,37 +115,43 @@
         gap: 16px;
       }
 
-      #dice-buttons {
-        display: flex;
-        gap: 6px;
+      /* --- Floating dice labels (3D projected) --- */
+      #dice-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        pointer-events: none;
+        overflow: hidden;
       }
-      .die-btn {
-        width: 50px; height: 50px;
-        border: 2px solid #444;
-        border-radius: 8px;
-        background: #2a2a2a;
-        color: #ddd;
-        font-size: 22px;
-        font-weight: bold;
+      .dice-label {
+        position: absolute;
+        transform: translate(-50%, -100%);
+        pointer-events: auto;
         cursor: pointer;
+        font-size: 20px;
+        font-weight: bold;
+        color: #fff;
+        text-shadow: 0 0 6px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7);
+        padding: 2px 8px;
+        border-radius: 4px;
         transition: all 0.15s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        user-select: none;
+        display: none;
       }
-      .die-btn:hover:not(:disabled) { border-color: #888; }
-      .die-btn.selected {
-        border-color: #f0c040;
-        background: rgba(240,192,64,0.2);
+      .dice-label.visible { display: block; }
+      .dice-label:hover, .dice-label.hovered {
         color: #f0c040;
+        text-shadow: 0 0 12px rgba(240,192,64,0.6), 0 0 4px rgba(0,0,0,0.9);
       }
-      .die-btn.kept {
-        border-color: #4a4;
-        background: rgba(68,170,68,0.15);
+      .dice-label.selected {
+        color: #f0c040;
+        background: rgba(240,192,64,0.15);
+        text-shadow: 0 0 16px rgba(240,192,64,0.8);
+      }
+      .dice-label.kept {
         color: #6c6;
+        text-shadow: 0 0 12px rgba(68,170,68,0.6);
         cursor: default;
       }
-      .die-btn:disabled { opacity: 0.3; cursor: default; }
 
       #selection-score {
         font-size: 13px;
@@ -241,23 +248,23 @@
       </div>
     </div>
 
-    <!-- Middle: canvas -->
+    <!-- Middle: canvas + floating dice labels -->
     <div id="canvas-area">
       <canvas id="cnv" width="1280" height="960"></canvas>
+      <div id="dice-overlay">
+        <div class="dice-label" data-index="0"></div>
+        <div class="dice-label" data-index="1"></div>
+        <div class="dice-label" data-index="2"></div>
+        <div class="dice-label" data-index="3"></div>
+        <div class="dice-label" data-index="4"></div>
+        <div class="dice-label" data-index="5"></div>
+      </div>
     </div>
 
-    <!-- Bottom: status + dice + actions -->
+    <!-- Bottom: status + actions -->
     <div id="bottom-bar">
       <div id="status-msg">Press Roll to start!</div>
       <div id="controls-row">
-        <div id="dice-buttons">
-          <button class="die-btn" data-index="0" disabled>-</button>
-          <button class="die-btn" data-index="1" disabled>-</button>
-          <button class="die-btn" data-index="2" disabled>-</button>
-          <button class="die-btn" data-index="3" disabled>-</button>
-          <button class="die-btn" data-index="4" disabled>-</button>
-          <button class="die-btn" data-index="5" disabled>-</button>
-        </div>
         <div id="selection-score"></div>
         <div id="actions">
           <button id="btn-roll">Roll</button>

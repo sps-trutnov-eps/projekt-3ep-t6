@@ -3,18 +3,20 @@
   ---------
   Entry point — WebGL setup, render loop, and game UI orchestration.
   Handles both human and AI turns with visual dice rolling.
+  Dice selection via 3D-projected floating labels over the canvas.
 */
 import { initBuffers, initTableBuffers, initFrameBuffers } from "./init-buffers.js";
 import { drawScene } from "./draw.js";
 import { loop, rollAllDice, rollDice, getDiceValues, allSettled, NUM_DICE } from "./physics.js";
 import * as game from "./game.js";
 
+const { mat4 } = window;
+
 // --- WebGL init ---
 const cnv = document.getElementById("cnv");
 const gl = cnv.getContext("webgl");
 
-// Pixelation: render at a fraction of container size, CSS stretches it up
-const PIXEL_SCALE = 3; // 1/3 resolution for chunky pixel look
+const PIXEL_SCALE = 3;
 function resizeCanvas() {
   const rect = cnv.parentElement.getBoundingClientRect();
   const w = Math.floor(rect.width / PIXEL_SCALE);
@@ -37,24 +39,18 @@ const vsSource = `
     attribute vec4 aVertexPosition;
     attribute vec3 aVertexNormal;
     attribute vec2 aTextureCoord;
-
     uniform mat4 uNormalMatrix;
     uniform mat4 uModelViewMatrix;
     uniform mat4 uProjectionMatrix;
-
     varying highp vec2 vTextureCoord;
     varying highp vec3 vLighting;
-
     void main(void) {
       gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
       vTextureCoord = aTextureCoord;
-
       highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
       highp vec3 directionalLightColor = vec3(1, 1, 1);
       highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));
-
       highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 0.0);
-
       highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
       vLighting = ambientLight + (directionalLightColor * directional);
     }
@@ -63,9 +59,7 @@ const vsSource = `
 const fsSource = `
     varying highp vec2 vTextureCoord;
     varying highp vec3 vLighting;
-
     uniform sampler2D uSampler;
-
     void main(void) {
       highp vec4 texelColor = texture2D(uSampler, vTextureCoord);
       gl_FragColor = vec4(texelColor.rgb * vLighting, texelColor.a);
@@ -135,6 +129,35 @@ const texture = loadTexture(gl, "cubetexture.png");
 const tableTexture = loadTexture(gl, "WoodTexture.jpg");
 gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
+// --- 3D → 2D projection for floating labels ---
+// Same camera params as draw.js
+function getViewProjectionMatrix() {
+  const fov = (45 * Math.PI) / 180;
+  const aspect = cnv.clientWidth / cnv.clientHeight;
+  const proj = mat4.create();
+  mat4.perspective(proj, fov, aspect, 0.1, 100.0);
+  const view = mat4.create();
+  mat4.lookAt(view, [0, 5, 2], [0, -2, -8], [0, 1, 0]);
+  const vp = mat4.create();
+  mat4.multiply(vp, proj, view);
+  return vp;
+}
+
+function projectToScreen(worldPos, vpMatrix) {
+  // Multiply VP * [x, y, z, 1]
+  const x = worldPos[0], y = worldPos[1], z = worldPos[2];
+  const clipX = vpMatrix[0]*x + vpMatrix[4]*y + vpMatrix[8]*z + vpMatrix[12];
+  const clipY = vpMatrix[1]*x + vpMatrix[5]*y + vpMatrix[9]*z + vpMatrix[13];
+  const clipW = vpMatrix[3]*x + vpMatrix[7]*y + vpMatrix[11]*z + vpMatrix[15];
+  if (clipW <= 0) return null; // behind camera
+  const ndcX = clipX / clipW;
+  const ndcY = clipY / clipW;
+  return {
+    x: (ndcX + 1) / 2 * cnv.clientWidth,
+    y: (1 - ndcY) / 2 * cnv.clientHeight,
+  };
+}
+
 // --- UI elements ---
 const elPlayerScore = document.getElementById("player-score");
 const elAiScore = document.getElementById("ai-score");
@@ -145,7 +168,7 @@ const elSelectionScore = document.getElementById("selection-score");
 const btnRoll = document.getElementById("btn-roll");
 const btnConfirm = document.getElementById("btn-confirm");
 const btnBank = document.getElementById("btn-bank");
-const dieBtns = document.querySelectorAll(".die-btn");
+const diceLabels = document.querySelectorAll(".dice-label");
 const btnRules = document.getElementById("btn-rules");
 const rulesModal = document.getElementById("rules-modal");
 const rulesClose = document.getElementById("rules-close");
@@ -158,6 +181,7 @@ rulesModal.addEventListener('click', (e) => {
 
 // --- Game UI state ---
 let settleHandled = true;
+let lastDiceState = [];
 
 function updateUI() {
   const s = game.getState();
@@ -165,29 +189,22 @@ function updateUI() {
   elAiScore.textContent = s.aiScore;
   elTurnScore.textContent = s.turnScore;
 
-  // Turn indicator
   const isHuman = s.currentPlayer === 'human';
   elTurnIndicator.textContent = isHuman ? 'Your turn' : 'AI turn';
   elTurnIndicator.className = isHuman ? 'human' : 'ai';
 
-  // Die buttons
-  for (let i = 0; i < NUM_DICE; i++) {
-    const btn = dieBtns[i];
-    btn.textContent = s.diceValues[i] || '-';
-    btn.classList.toggle('selected', s.selected[i]);
-    btn.classList.toggle('kept', s.kept[i]);
-    btn.disabled = s.phase !== 'SELECTING' || s.kept[i];
-  }
-
-  // Action buttons — only during human turns
+  // Action buttons
   const humanSelecting = s.phase === 'SELECTING';
   btnRoll.disabled = !(s.phase === 'READY');
   btnConfirm.disabled = !humanSelecting;
   btnBank.disabled = !humanSelecting || s.turnScore === 0;
 
   if (humanSelecting) {
-    btnRoll.disabled = true; // enabled after confirm
+    btnRoll.disabled = true;
   }
+
+  // Update floating dice labels
+  updateDiceLabels();
 
   // Selection score preview
   const sel = game.getSelectedScore();
@@ -195,6 +212,52 @@ function updateUI() {
     elSelectionScore.textContent = `+${sel.score}`;
   } else {
     elSelectionScore.textContent = '';
+  }
+}
+
+function updateDiceLabels() {
+  const s = game.getState();
+  const settled = allSettled();
+  const showLabels = settled && (s.phase === 'SELECTING' || s.phase === 'AI_SELECTING' ||
+    s.phase === 'FARKLE' || s.phase === 'AI_FARKLE');
+
+  if (!showLabels || lastDiceState.length === 0) {
+    for (const label of diceLabels) label.classList.remove('visible');
+    return;
+  }
+
+  const vp = getViewProjectionMatrix();
+
+  for (let i = 0; i < NUM_DICE; i++) {
+    const label = diceLabels[i];
+    const ds = lastDiceState[i];
+    if (!ds) continue;
+
+    // Project position slightly above the die
+    const abovePos = [ds.pos[0], ds.pos[1] + 1.8, ds.pos[2]];
+    const screen = projectToScreen(abovePos, vp);
+
+    if (!screen || screen.x < -20 || screen.x > cnv.clientWidth + 20 ||
+        screen.y < -20 || screen.y > cnv.clientHeight + 20) {
+      label.classList.remove('visible');
+      continue;
+    }
+
+    label.style.left = screen.x + 'px';
+    label.style.top = screen.y + 'px';
+    label.textContent = s.diceValues[i] || '';
+    label.classList.add('visible');
+    label.classList.toggle('selected', s.selected[i]);
+    label.classList.toggle('kept', s.kept[i]);
+
+    // Only interactive during human SELECTING phase
+    if (s.phase === 'SELECTING' && !s.kept[i]) {
+      label.style.pointerEvents = 'auto';
+      label.style.cursor = 'pointer';
+    } else {
+      label.style.pointerEvents = 'none';
+      label.style.cursor = 'default';
+    }
   }
 }
 
@@ -207,7 +270,6 @@ function disableAllButtons() {
   btnRoll.disabled = true;
   btnConfirm.disabled = true;
   btnBank.disabled = true;
-  for (const btn of dieBtns) btn.disabled = true;
 }
 
 function postConfirmUI() {
@@ -215,7 +277,13 @@ function postConfirmUI() {
   btnRoll.disabled = false;
   btnBank.disabled = false;
   btnConfirm.disabled = true;
-  for (const btn of dieBtns) btn.disabled = true;
+
+  // Hide labels after confirm (dice are locked in)
+  for (const label of diceLabels) {
+    if (!s.kept[parseInt(label.dataset.index)]) {
+      label.classList.remove('visible');
+    }
+  }
 
   const remaining = s.kept.filter(k => !k).length;
   if (remaining === 0) {
@@ -225,7 +293,7 @@ function postConfirmUI() {
   }
 }
 
-// --- Helper: trigger a roll (human or AI) ---
+// --- Helper: trigger a roll ---
 function triggerRoll() {
   const s = game.getState();
   const side = s.currentPlayer === 'ai' ? 'far' : 'near';
@@ -237,11 +305,21 @@ function triggerRoll() {
   }
   settleHandled = false;
   disableAllButtons();
+  // Hide all labels during roll
+  for (const label of diceLabels) label.classList.remove('visible');
   updateUI();
 }
 
-// --- Human event handlers ---
+// --- Dice label click handlers ---
+diceLabels.forEach(label => {
+  label.addEventListener('click', () => {
+    const idx = parseInt(label.dataset.index);
+    game.toggleSelect(idx);
+    updateUI();
+  });
+});
 
+// --- Human event handlers ---
 btnRoll.addEventListener('click', () => {
   const s = game.getState();
   if (s.phase === 'WIN' || s.phase === 'LOSE') {
@@ -274,26 +352,15 @@ btnBank.addEventListener('click', () => {
     btnRoll.textContent = 'New Game';
     btnRoll.disabled = false;
   } else if (s.phase === 'AI_READY') {
-    // AI's turn starts
     setStatus('You banked. AI\'s turn...');
     setTimeout(() => startAiTurn(), 1000);
   }
 });
 
-dieBtns.forEach(btn => {
-  btn.addEventListener('click', () => {
-    const idx = parseInt(btn.dataset.index);
-    game.toggleSelect(idx);
-    updateUI();
-  });
-});
-
-// --- AI turn logic (visual, with delays) ---
-
+// --- AI turn logic ---
 function startAiTurn() {
   setStatus('AI is rolling...');
   triggerRoll();
-  // settle detection in render loop will call handleAiSettle
 }
 
 function handleAiSettle() {
@@ -311,25 +378,19 @@ function handleAiSettle() {
     return;
   }
 
-  // AI_SELECTING — pick scoring dice with a delay
   const toKeep = game.aiPickScoringDice(s.diceValues, s.kept);
-  if (toKeep.length === 0) return; // shouldn't happen if not farkle
+  if (toKeep.length === 0) return;
 
-  // Visually select dice one by one
+  // Visually select dice one by one via labels
   let idx = 0;
   const selectInterval = setInterval(() => {
     if (idx >= toKeep.length) {
       clearInterval(selectInterval);
-      // Confirm after a brief pause
       setTimeout(() => aiConfirmAndDecide(), 600);
       return;
     }
     game.toggleSelect(toKeep[idx]);
     updateUI();
-    // Show the dice values on buttons during AI turn
-    for (let i = 0; i < NUM_DICE; i++) {
-      dieBtns[i].textContent = s.diceValues[i] || '-';
-    }
     idx++;
   }, 300);
 }
@@ -357,12 +418,9 @@ function aiConfirmAndDecide() {
       }
     }, 1000);
   } else {
-    // Roll again
     const remaining = s.kept.filter(k => !k).length;
     setStatus(`AI pushes (${s.turnScore} pts). Rolling ${remaining || 6} dice...`);
-    setTimeout(() => {
-      triggerRoll();
-    }, 1000);
+    setTimeout(() => triggerRoll(), 1000);
   }
 }
 
@@ -382,22 +440,24 @@ function render(now) {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   const diceState = loop(deltaTime);
+  lastDiceState = diceState;
 
   for (let i = 0; i < diceState.length; i++) {
     const d = diceState[i];
     drawScene(gl, programInfo, buffers, texture, d.quat, d.pos);
   }
 
-  // Draw table
   drawScene(gl, programInfo, tableBuffers, tableTexture, [0, 0, 0], [0, -4, -8]);
 
-  // Draw frame walls (positioned at table surface Y=-4)
   for (const wall of Object.values(frameWalls)) {
     drawScene(gl, programInfo, wall.buffers, tableTexture, [0, 0, 0],
       [wall.pos[0], -4 + wall.pos[1], wall.pos[2]]);
   }
 
-  // Settle detection — handles both human and AI
+  // Update floating label positions every frame
+  updateDiceLabels();
+
+  // Settle detection
   if (!settleHandled && allSettled()) {
     settleHandled = true;
     const values = getDiceValues();
@@ -405,10 +465,8 @@ function render(now) {
     updateUI();
 
     if (s.currentPlayer === 'ai') {
-      // AI turn settle
       handleAiSettle();
     } else {
-      // Human turn settle
       if (s.phase === 'FARKLE') {
         setStatus('Farkle! No scoring dice.', 'farkle');
         setTimeout(() => {
