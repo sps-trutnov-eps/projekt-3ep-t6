@@ -114,7 +114,7 @@ exports.postSelectDice = async (req, res) => {
         const newTotal     = gameState.p1_score + newTurnScore;
 
         let updatedGame = await gameModel.updateTurn(
-            gameState.id, points, nextDiceCount, lastRoll
+            gameState.id, points, nextDiceCount, []
         );
 
         if (newTotal >= WIN_SCORE) {
@@ -277,7 +277,7 @@ exports.postMultiplayerSelect = async (req, res) => {
         const newTotal      = myScore + newTurnScore;
 
         const WIN_SCORE = 10000;
-        let updated = await gameModel.updateTurn(game.id, points, nextDiceCount, lastRoll);
+        let updated = await gameModel.updateTurn(game.id, points, nextDiceCount, []);
 
         if (newTotal >= WIN_SCORE) {
             await gameModel.bankPoints(game.id, req.session.user.id, req.session.user.id);
