@@ -68,7 +68,6 @@ async function acceptInvitation(invitationId, btn) {
             return;
         }
 
-        // presmerovani na cekaci mistnost
         window.location.href = `/matchmaking/waiting/${data.roomCode}`;
     } catch (err) {
         console.error('acceptInvitation error:', err);
@@ -83,7 +82,6 @@ function toggleInvitations(e) {
     dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
 }
 
-// zavreni dropdownu kliknutim mimo nej
 document.addEventListener('click', (e) => {
     const dropdown = document.getElementById('inv-dropdown');
     if (!dropdown) return;

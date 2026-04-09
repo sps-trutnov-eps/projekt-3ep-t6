@@ -51,17 +51,41 @@ function renderState(g) {
 
     // Indikátor tahu
     const indicator = document.getElementById('turn-indicator');
-    indicator.textContent = isMyTurn ? '🎲 Jsi na tahu' : '⏳ Čekám na soupeře…';
-    indicator.style.color = isMyTurn ? '#8d8638' : '#7a665d';
+    if (isMyTurn) {
+        indicator.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8d8638" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="3"/>
+                <circle cx="12" cy="12" r="1.5" fill="#8d8638"/>
+            </svg>
+            Jsi na tahu`;
+        indicator.style.color = '#8d8638';
+    } else {
+        indicator.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7a665d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Čekám na soupeře…`;
+        indicator.style.color = '#7a665d';
+    }
 
-    // Hra skončila
+    // Výsledek hry
     if (g.status === 'FINISHED') {
-        stopPolling();
         const won = g.winner_id === MY_ID;
-        document.getElementById('finished-text').textContent = won ? '🏆 Vyhráli jste!' : '😞 Prohráli jste.';
-        document.getElementById('game-finished').style.display = 'block';
-        document.getElementById('action-area').style.display   = 'none';
-        return;
+        document.getElementById('finished-text').innerHTML = won
+            ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#b4901e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                <path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+            </svg>
+            Vyhráli jste!`
+            : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7f3004" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+            Prohráli jste.`;
     }
 
     // Přepnutí polling / aktivní UI
@@ -324,7 +348,7 @@ function setButtonsWaiting() {
 }
 
 function showBust() {
-    document.getElementById('bust-msg').style.display = 'block';
+    document.getElementById('bust-msg').style.display = 'flex';
 }
 
 function hideBust() {
