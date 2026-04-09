@@ -6,6 +6,9 @@
     <title><%= title || 'Dice game' %></title>
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=MedievalSharp&display=swap" rel="stylesheet">
+    <% if (user) { %>
+        <script src="/js/invitations.js" defer></script>
+    <% } %>
 </head>
 <body>
     <nav class="navbar">
@@ -17,12 +20,24 @@
                 <li><a href="/">Domů</a></li>
                 <% if (user) { %>
                 <li><a href="/friends">Přátelé</a></li>
+                <li style="position: relative;">
+                    <a href="#" onclick="toggleInvitations(event)">
+                        🔔 <span id="inv-badge" style="display:none; position:absolute; top:4px; right:4px; background:#7f3004; color:white; border-radius:50%; width:16px; height:16px; font-size:10px; align-items:center; justify-content:center;">0</span>
+                    </a>
+                    <div id="inv-dropdown" style="display:none; position:absolute; right:0; top:40px; background:white; border:2px solid #c8bdb0; min-width:280px; z-index:999; box-shadow: 2px 2px 8px rgba(0,0,0,0.15);">
+                        <div style="padding:0.75rem 1rem; border-bottom:1px solid #e8ddd0; font-weight:bold; color:#7f3004;">
+                            Pozvánky ke hře
+                        </div>
+                        <div id="inv-list" style="max-height:300px; overflow-y:auto;">
+                            <p style="padding:1rem; color:#7a665d; font-size:0.9rem;">Žádné pozvánky</p>
+                        </div>
+                    </div>
+                </li>
                 <% } %>
                 <li><a href="/matchmaking">Matchmaking</a></li>
                 <li><a href="/stats">Statistiky</a></li>
                 <li><a href="/kostky/index.html">Kostky</a></li>
-
-                <% if (user) { %> 
+                <% if (user) { %>
                 <li>
                     <form method="post" action="/auth/logout" style="margin: 0; padding: 0; display: flex; align-items: center;">
                         <button type="submit" style="all: unset; cursor: pointer; color: #ecf0f1; font-size: 20px; padding: 10px; transition: color 0.3s;">Odhlásit</button>

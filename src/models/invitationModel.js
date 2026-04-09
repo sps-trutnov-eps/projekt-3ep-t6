@@ -50,6 +50,11 @@ class Invitation {
         const { rows } = await db.query(sql, [invitationId, status]);
         return rows[0];
     }
+    
+    static async findById(invitationId) {
+        const { rows } = await db.query('SELECT * FROM invitations WHERE id = $1', [invitationId]);
+        return rows[0];
+    }
 }
 
 module.exports = Invitation;
