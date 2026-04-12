@@ -118,9 +118,9 @@ function loadTexture(gl, url) {
 const buffers = initBuffers(gl);
 const tableBuffers = initTableBuffers(gl);
 const frameWalls = initFrameBuffers(gl);
+gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 const texture = loadTexture(gl, "/kostky/cubetexture.png");
 const tableTexture = loadTexture(gl, "/kostky/WoodTexture.jpg");
-gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
 // --- 3D → 2D projection for labels ---
 function getViewProjectionMatrix() {
