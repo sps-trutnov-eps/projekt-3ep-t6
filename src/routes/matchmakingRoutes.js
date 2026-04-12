@@ -17,6 +17,7 @@ router.post('/start', matchmakingController.startGame);
 router.get('/waiting/:code', matchmakingController.getWaitingPage);
 router.get('/wait-status/:code', matchmakingController.waitForGame);
 router.get('/invitations', matchmakingController.getMyInvitations);
+router.get('/notifications', matchmakingController.getNotifications);
 router.post('/invitations/accept', matchmakingController.acceptInvite);
 
 module.exports = router;

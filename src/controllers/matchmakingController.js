@@ -240,6 +240,25 @@ exports.getMyInvitations = async (req, res) => {
   }
 };
 
+exports.getNotifications = async (req, res) => {
+  try {
+    if (!req.session.user) return res.status(401).json({ error: 'Nejsi přihlášen' });
+    const userId = req.session.user.id;
+
+    const invitations = await Invitation.listByReceiver(userId);
+    const friendRequests = await Friend.getPendingRequests(userId);
+
+    res.json({
+      success: true,
+      invitations,
+      friendRequests
+    });
+  } catch (err) {
+    console.error('getNotifications error:', err);
+    res.status(500).json({ success: false, error: 'Chyba serveru' });
+  }
+};
+
 // prijmout pozvanku
 exports.acceptInvite = async (req, res) => {
   try {
