@@ -5,10 +5,10 @@
   Handles both human and AI turns with visual dice rolling.
   Dice selection via 3D-projected floating labels over the canvas.
 */
-import { initBuffers, initTableBuffers, initFrameBuffers } from "./init-buffers.js";
-import { drawScene } from "./draw.js";
-import { loop, rollAllDice, rollDice, getDiceValues, allSettled, NUM_DICE } from "./physics.js";
-import * as game from "./game.js";
+import { initBuffers, initTableBuffers, initFrameBuffers } from "/kostky/init-buffers.js";
+import { drawScene } from "/kostky/draw.js";
+import { loop, rollAllDice, rollDice, getDiceValues, allSettled, NUM_DICE } from "/kostky/physics.js";
+import * as game from "/kostky/game.js";
 
 const { mat4 } = window;
 
@@ -47,8 +47,8 @@ const vsSource = `
     void main(void) {
       gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
       vTextureCoord = aTextureCoord;
-      highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
-      highp vec3 directionalLightColor = vec3(1, 1, 1);
+      highp vec3 ambientLight = vec3(0.35, 0.32, 0.25);
+      highp vec3 directionalLightColor = vec3(1.0, 0.92, 0.75);
       highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));
       highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 0.0);
       highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
@@ -125,8 +125,8 @@ function isPowerOf2(value) { return (value & (value - 1)) === 0; }
 const buffers = initBuffers(gl);
 const tableBuffers = initTableBuffers(gl);
 const frameWalls = initFrameBuffers(gl);
-const texture = loadTexture(gl, "cubetexture.png");
-const tableTexture = loadTexture(gl, "WoodTexture.jpg");
+const texture = loadTexture(gl, "/kostky/cubetexture.png");
+const tableTexture = loadTexture(gl, "/kostky/WoodTexture.jpg");
 gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
 // --- 3D → 2D projection for floating labels ---
@@ -137,7 +137,7 @@ function getViewProjectionMatrix() {
   const proj = mat4.create();
   mat4.perspective(proj, fov, aspect, 0.1, 100.0);
   const view = mat4.create();
-  mat4.lookAt(view, [0, 5, 2], [0, -2, -8], [0, 1, 0]);
+  mat4.lookAt(view, [0, 12, 3], [0, -3, -13], [0, 1, 0]);
   const vp = mat4.create();
   mat4.multiply(vp, proj, view);
   return vp;
@@ -182,6 +182,7 @@ rulesModal.addEventListener('click', (e) => {
 // --- Game UI state ---
 let settleHandled = true;
 let lastDiceState = [];
+let ghostDice = []; // frozen positions of previous player's dice
 
 function updateUI() {
   const s = game.getState();
@@ -233,9 +234,8 @@ function updateDiceLabels() {
     const ds = lastDiceState[i];
     if (!ds) continue;
 
-    // Project position slightly above the die
-    const abovePos = [ds.pos[0], ds.pos[1] + 1.8, ds.pos[2]];
-    const screen = projectToScreen(abovePos, vp);
+    // Project the die center position (hit area sits on the die)
+    const screen = projectToScreen(ds.pos, vp);
 
     if (!screen || screen.x < -20 || screen.x > cnv.clientWidth + 20 ||
         screen.y < -20 || screen.y > cnv.clientHeight + 20) {
@@ -245,7 +245,7 @@ function updateDiceLabels() {
 
     label.style.left = screen.x + 'px';
     label.style.top = screen.y + 'px';
-    label.textContent = s.diceValues[i] || '';
+    label.querySelector('.dice-value').textContent = s.diceValues[i] || '';
     label.classList.add('visible');
     label.classList.toggle('selected', s.selected[i]);
     label.classList.toggle('kept', s.kept[i]);
@@ -297,6 +297,10 @@ function postConfirmUI() {
 function triggerRoll() {
   const s = game.getState();
   const side = s.currentPlayer === 'ai' ? 'far' : 'near';
+  // Snapshot current dice as ghosts before rolling (so previous player's dice stay visible)
+  if (lastDiceState.length > 0) {
+    ghostDice = lastDiceState.map(d => ({ quat: [...d.quat], pos: [...d.pos] }));
+  }
   const indices = game.startRoll();
   if (indices.length === 0 || indices.length === 6) {
     rollAllDice(side);
@@ -324,6 +328,7 @@ btnRoll.addEventListener('click', () => {
   const s = game.getState();
   if (s.phase === 'WIN' || s.phase === 'LOSE') {
     game.newGame();
+    ghostDice = [];
     updateUI();
     setStatus('Press Roll to start!');
     btnRoll.textContent = 'Roll';
@@ -442,12 +447,18 @@ function render(now) {
   const diceState = loop(deltaTime);
   lastDiceState = diceState;
 
+  // Draw ghost dice (previous player's frozen positions)
+  for (const g of ghostDice) {
+    drawScene(gl, programInfo, buffers, texture, g.quat, g.pos);
+  }
+
+  // Draw active dice
   for (let i = 0; i < diceState.length; i++) {
     const d = diceState[i];
     drawScene(gl, programInfo, buffers, texture, d.quat, d.pos);
   }
 
-  drawScene(gl, programInfo, tableBuffers, tableTexture, [0, 0, 0], [0, -4, -8]);
+  drawScene(gl, programInfo, tableBuffers, tableTexture, [0, 0, 0], [0, -4, 0]);
 
   for (const wall of Object.values(frameWalls)) {
     drawScene(gl, programInfo, wall.buffers, tableTexture, [0, 0, 0],

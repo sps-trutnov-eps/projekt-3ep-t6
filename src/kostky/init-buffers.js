@@ -23,7 +23,7 @@ function initPositionBuffer(gl) {
   // operations to from here out.
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
-  const S = 0.9; // half-size (10% smaller than original 1.0)
+  const S = 0.7; // half-size
   const positions = [
   // Front face
   -S, -S, S, S, -S, S, S, S, S, -S, S, S,
@@ -167,12 +167,12 @@ function initTableBuffers(gl) {
   const positionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
-  // Flat quad in the XYZ plane, 12 wide x 8 deep
+  // Flat quad slightly larger than both frames (X ±4.8, Z -22.7 to -3.5)
   const positions = [
-    -10.0, 0.0, -20.0,
-     10.0, 0.0, -20.0,
-     10.0, 0.0,   4.0,
-    -10.0, 0.0,   4.0,
+    -7.0, 0.0, -25.0,
+     7.0, 0.0, -25.0,
+     7.0, 0.0,  -1.0,
+    -7.0, 0.0,  -1.0,
   ];
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
@@ -260,26 +260,30 @@ function createBoxBuffers(gl, hx, hy, hz) {
   return { position: positionBuffer, normal: normalBuffer, textureCoord: textureCoordBuffer, indices: indexBuffer, vertexCount: 36 };
 }
 
-// Frame = 4 walls forming a square tray around the dice area
-// Physics walls: X +-5, Z -14 to -3. Frame slightly inside.
+// Two square frames stacked in Z (near = human, far = AI), sharing a wall at Z_MID.
+// Original width preserved (X_HALF=4.8), each frame is square (~9.6 × 9.6).
 function initFrameBuffers(gl) {
-  const WALL_H = 0.6;    // wall height
-  const WALL_T = 0.25;   // wall thickness
-  const X = 4.8;          // half-width of inner area
-  const Z_MIN = -13.5;
-  const Z_MAX = -3.5;
-  const Z_MID = (Z_MIN + Z_MAX) / 2;
-  const Z_HALF = (Z_MAX - Z_MIN) / 2;
+  const WALL_H = 0.6;
+  const WALL_T = 0.25;
+  const X_HALF = 4.8;                       // original half-width
+  const DEPTH = X_HALF * 2;                 // 9.6 — square frame
+  const Z_NEAR_MAX = -3.5;                  // front edge
+  const Z_MID = Z_NEAR_MAX - DEPTH;         // -13.1 shared wall
+  const Z_FAR_MIN = Z_MID - DEPTH;          // -22.7 back edge
+  const Z_TOTAL_MID = (Z_NEAR_MAX + Z_FAR_MIN) / 2;
+  const Z_TOTAL_HALF = (Z_NEAR_MAX - Z_FAR_MIN) / 2;
 
   return {
-    // Left wall: runs along Z, at X = -X
-    left:  { buffers: createBoxBuffers(gl, WALL_T, WALL_H, Z_HALF + WALL_T), pos: [-X - WALL_T, WALL_H, Z_MID] },
-    // Right wall
-    right: { buffers: createBoxBuffers(gl, WALL_T, WALL_H, Z_HALF + WALL_T), pos: [X + WALL_T, WALL_H, Z_MID] },
-    // Back wall: runs along X, at Z = Z_MIN
-    back:  { buffers: createBoxBuffers(gl, X + WALL_T * 2, WALL_H, WALL_T), pos: [0, WALL_H, Z_MIN - WALL_T] },
-    // Front wall
-    front: { buffers: createBoxBuffers(gl, X + WALL_T * 2, WALL_H, WALL_T), pos: [0, WALL_H, Z_MAX + WALL_T] },
+    // Left wall (full length, both frames)
+    left:   { buffers: createBoxBuffers(gl, WALL_T, WALL_H, Z_TOTAL_HALF + WALL_T), pos: [-X_HALF - WALL_T, WALL_H, Z_TOTAL_MID] },
+    // Right wall (full length, both frames)
+    right:  { buffers: createBoxBuffers(gl, WALL_T, WALL_H, Z_TOTAL_HALF + WALL_T), pos: [X_HALF + WALL_T, WALL_H, Z_TOTAL_MID] },
+    // Front wall (near edge)
+    front:  { buffers: createBoxBuffers(gl, X_HALF + WALL_T * 2, WALL_H, WALL_T), pos: [0, WALL_H, Z_NEAR_MAX + WALL_T] },
+    // Back wall (far edge)
+    back:   { buffers: createBoxBuffers(gl, X_HALF + WALL_T * 2, WALL_H, WALL_T), pos: [0, WALL_H, Z_FAR_MIN - WALL_T] },
+    // Shared middle wall
+    middle: { buffers: createBoxBuffers(gl, X_HALF + WALL_T * 2, WALL_H, WALL_T), pos: [0, WALL_H, Z_MID] },
   };
 }
 

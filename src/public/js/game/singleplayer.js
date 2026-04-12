@@ -40,46 +40,20 @@ let currentRoll     = [];
 let selectedDice    = [];
 let selectionLocked = false;
 
-//  Renderování kostek
-function getDiceFaceHTML(value) {
-    const dotPositions = {
-        1: [4],
-        2: [2, 6],
-        3: [2, 4, 6],
-        4: [0, 2, 6, 8],
-        5: [0, 2, 4, 6, 8],
-        6: [0, 2, 3, 5, 6, 8],
-    };
-    const positions = dotPositions[value] || [];
-    let dots = '';
-    for (let i = 0; i < 9; i++) {
-        dots += `<div class="dot-cell">${positions.includes(i) ? '<div class="dot"></div>' : ''}</div>`;
-    }
-    return `<div class="dice-face-grid">${dots}</div>`;
-}
-
-function renderDice(rollValues) {
-    const area = document.getElementById('dice-area');
-    area.innerHTML = '';
-    rollValues.forEach((val, idx) => {
-        const div = document.createElement('div');
-        div.className = 'dice-die';
-        div.dataset.index = idx;
-        div.innerHTML = getDiceFaceHTML(val);
-        div.addEventListener('click', () => {
-            if (selectionLocked) return;
-            toggleDie(idx);
-        });
-        area.appendChild(div);
+// Wire up 3D selection callback
+function setup3DSelection() {
+    if (!window.diceRenderer) return;
+    window.diceRenderer.onSelect((idx, selectedSet) => {
+        if (selectionLocked) return;
+        selectedDice = new Array(currentRoll.length).fill(false);
+        for (const i of selectedSet) selectedDice[i] = true;
+        updateSelectionScore();
     });
 }
 
-function toggleDie(idx) {
-    selectedDice[idx] = !selectedDice[idx];
-    const dice = document.querySelectorAll('.dice-die');
-    dice[idx].classList.toggle('selected', selectedDice[idx]);
-    updateSelectionScore();
-}
+// Try immediately, retry after module loads
+setup3DSelection();
+window.addEventListener('load', setup3DSelection);
 
 function updateSelectionScore() {
     const chosen = currentRoll.filter((_, i) => selectedDice[i]);
@@ -102,18 +76,25 @@ function updateGameState(gameState) {
 function showFinished() {
     document.getElementById('game-finished').style.display = 'block';
     document.getElementById('action-area').style.display   = 'none';
-    document.getElementById('dice-area').innerHTML = '';
+    if (window.diceRenderer) window.diceRenderer.hideLabels();
 }
 
 //  Fáze hry
 async function rollDice() {
     setButtonsDisabled(true);
+
+    // Trigger 3D dice animation
+    const diceLeft = parseInt(document.getElementById('dice-left-count').textContent) || 6;
+    if (window.diceRenderer) {
+        window.diceRenderer.roll(diceLeft);
+    }
+
     try {
         const res  = await fetch('/game/roll', { method: 'POST' });
         const data = await res.json();
 
         if (!data.success) {
-            alert('Chyba při házení: ' + (data.error ?? 'neznámá chyba'));
+            alert('Chyba pri hazeni: ' + (data.error ?? 'neznama chyba'));
             setButtonsDisabled(false);
             return;
         }
@@ -126,26 +107,45 @@ async function rollDice() {
             : JSON.parse(gameState.last_roll ?? '[]');
 
         if (data.bust) {
-            renderDice(currentRoll);
-            showBustMessage();
-            enterRollPhase();
+            // Show values on 3D labels briefly, then bust
+            waitForSettleThenShow(currentRoll, () => {
+                showBustMessage();
+                setTimeout(() => {
+                    if (window.diceRenderer) window.diceRenderer.hideLabels();
+                    enterRollPhase();
+                }, 1500);
+            });
             return;
         }
 
         if (gameState.status === 'FINISHED') {
-            renderDice(currentRoll);
+            waitForSettleThenShow(currentRoll, () => {});
             return;
         }
 
         selectedDice    = new Array(currentRoll.length).fill(false);
         selectionLocked = false;
-        renderDice(currentRoll);
-        enterSelectPhase();
+
+        // Wait for 3D dice to settle, then show values and enable selection
+        waitForSettleThenShow(currentRoll, () => {
+            enterSelectPhase();
+        });
 
     } catch (err) {
         console.error(err);
-        alert('Nepodařilo se spojit se serverem.');
+        alert('Nepodarilo se spojit se serverem.');
         setButtonsDisabled(false);
+    }
+}
+
+function waitForSettleThenShow(values, callback) {
+    if (window.diceRenderer) {
+        window.diceRenderer.onSettle(() => {
+            window.diceRenderer.showValues(values);
+            callback();
+        });
+    } else {
+        callback();
     }
 }
 
@@ -164,7 +164,7 @@ async function confirmSelection() {
     const localScore = checkCurrentScore(chosen);
 
     if (localScore === 0) {
-        alert('Vybraná kombinace nemá žádné body!');
+        alert('Vybrana kombinace nema zadne body!');
         return;
     }
 
@@ -178,7 +178,7 @@ async function confirmSelection() {
         const data = await res.json();
 
         if (!data.success) {
-            alert('Chyba: ' + (data.error ?? 'neznámá chyba'));
+            alert('Chyba: ' + (data.error ?? 'neznama chyba'));
             setButtonsDisabled(false);
             return;
         }
@@ -186,36 +186,15 @@ async function confirmSelection() {
         updateGameState(data.gameState);
         if (data.gameState.status === 'FINISHED') return;
 
-        const notChosen = currentRoll.filter((_, i) => !selectedDice[i]);
         selectionLocked = true;
-        renderLockedDice(currentRoll, selectedDice, notChosen);
+        if (window.diceRenderer) window.diceRenderer.hideLabels();
         enterPostConfirmPhase(data.gameState.dice_left);
 
     } catch (err) {
         console.error(err);
-        alert('Nepodařilo se spojit se serverem.');
+        alert('Nepodarilo se spojit se serverem.');
         setButtonsDisabled(false);
     }
-}
-
-function renderLockedDice(roll, selected, remaining) {
-    const area = document.getElementById('dice-area');
-    area.innerHTML = '';
-
-    roll.forEach((val, idx) => {
-        if (!selected[idx]) return;
-        const div = document.createElement('div');
-        div.className = 'dice-die locked';
-        div.innerHTML = getDiceFaceHTML(val);
-        area.appendChild(div);
-    });
-
-    remaining.forEach(() => {
-        const div = document.createElement('div');
-        div.className = 'dice-die empty';
-        div.innerHTML = '<div class="dice-face-grid"></div>';
-        area.appendChild(div);
-    });
 }
 
 function enterPostConfirmPhase(diceLeft) {
@@ -245,7 +224,7 @@ async function bankPoints() {
         const data = await res.json();
 
         if (!data.success) {
-            alert('Chyba při bankování: ' + (data.error ?? 'neznámá chyba'));
+            alert('Chyba pri bankovani: ' + (data.error ?? 'neznama chyba'));
             setButtonsDisabled(false);
             return;
         }
@@ -253,14 +232,14 @@ async function bankPoints() {
         updateGameState(data.gameState);
         if (data.gameState.status === 'FINISHED') return;
 
-        document.getElementById('dice-area').innerHTML = '';
+        if (window.diceRenderer) window.diceRenderer.hideLabels();
         document.getElementById('selection-score').textContent = 0;
         document.getElementById('selection-score-row').style.display = 'none';
         enterRollPhase();
 
     } catch (err) {
         console.error(err);
-        alert('Nepodařilo se spojit se serverem.');
+        alert('Nepodarilo se spojit se serverem.');
         setButtonsDisabled(false);
     }
 }
@@ -293,7 +272,7 @@ async function getGameState() {
         if (data.error) { console.warn('Stav hry:', data.error); return; }
         updateGameState(data);
     } catch (err) {
-        console.error('Nepodařilo se načíst stav hry:', err);
+        console.error('Nepodarilo se nacist stav hry:', err);
     }
 }
 

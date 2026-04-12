@@ -17,8 +17,8 @@ function drawScene(gl, programInfo, buffers, texture, rotation, pos) {
   // Camera: player's POV, looking across the table
   const viewMatrix = mat4.create();
   mat4.lookAt(viewMatrix,
-    [0, 5, 2],      // eye
-    [0, -2, -8],    // center
+    [0, 12, 3],     // eye — high POV
+    [0, -3, -13],   // center — middle of both frames
     [0, 1, 0],
   );
 

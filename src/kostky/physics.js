@@ -5,17 +5,17 @@
 // Exports a loop(dt) function that steps the simulation and returns
 // dice state (position + quaternion) for rendering.
 
-import * as CANNON from './node_modules/cannon-es/dist/cannon-es.js';
+import * as CANNON from '/kostky/node_modules/cannon-es/dist/cannon-es.js';
 
 // --- Constants ---
 const NUM_DICE = 6;
-const HALF_SIZE = 0.9;
+const HALF_SIZE = 0.7;
 const FLOOR_Y = -4.0;
 const MASS = 1.0;
 
 const TABLE_X_MIN = -5;
 const TABLE_X_MAX = 5;
-const TABLE_Z_MIN = -14;
+const TABLE_Z_MIN = -23;
 const TABLE_Z_MAX = -3;
 const CEILING_Y = 6;
 
@@ -82,6 +82,16 @@ const frontWall = new CANNON.Body({ mass: 0, shape: new CANNON.Plane(), material
 frontWall.quaternion.setFromEuler(0, Math.PI, 0);
 frontWall.position.set(0, 0, TABLE_Z_MAX);
 world.addBody(frontWall);
+
+// Middle divider wall at Z=-13.1 — thin Box, not two planes (avoids trapping dice)
+const MIDDLE_Z = -13.1;
+const middleWall = new CANNON.Body({
+  mass: 0,
+  shape: new CANNON.Box(new CANNON.Vec3(5, 4, 0.25)),
+  material: wallMaterial,
+});
+middleWall.position.set(0, 0, MIDDLE_Z);
+world.addBody(middleWall);
 
 // --- Snap-to-face helpers ---
 const LOCAL_AXES = [
@@ -169,8 +179,8 @@ function rollDice(indices, side) {
   if (!bodiesCreated) createBodies();
   side = side || 'near';
 
-  // Z center for each side of the table
-  const zCenter = side === 'far' ? -12 : -5;
+  // Near frame (Z -3.5 to -13.1) = human, Far frame (Z -13.1 to -22.7) = AI
+  const zCenter = side === 'far' ? -17.9 : -8.3;
 
   // Freeze dice NOT being rolled
   for (let i = 0; i < NUM_DICE; i++) {
@@ -194,7 +204,7 @@ function rollDice(indices, side) {
     b.wakeUp();
     d.settled = false;
 
-    // Spawn spread out with staggered heights
+    // Spawn spread out along X within the frame
     const spread = count > 1 ? (j / (count - 1)) * 5 - 2.5 : 0;
     b.position.set(
       spread + (Math.random() - 0.5) * 0.5,

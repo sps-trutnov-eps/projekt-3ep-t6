@@ -124,34 +124,51 @@
       }
       .dice-label {
         position: absolute;
-        transform: translate(-50%, -100%);
+        transform: translate(-50%, -50%);
         pointer-events: auto;
         cursor: pointer;
-        font-size: 20px;
+        user-select: none;
+        width: 48px;
+        height: 48px;
+        display: none;
+        border-radius: 50%;
+      }
+      .dice-label.visible { display: block; }
+      .dice-label .dice-value {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 22px;
         font-weight: bold;
         color: #fff;
         text-shadow: 0 0 6px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7);
-        padding: 2px 8px;
+        padding: 2px 10px;
         border-radius: 4px;
-        transition: all 0.15s;
-        user-select: none;
-        display: none;
+        white-space: nowrap;
+        opacity: 0;
+        transition: opacity 0.15s;
+        pointer-events: none;
       }
-      .dice-label.visible { display: block; }
-      .dice-label:hover, .dice-label.hovered {
+      .dice-label:hover .dice-value,
+      .dice-label.selected .dice-value,
+      .dice-label.kept .dice-value {
+        opacity: 1;
+      }
+      .dice-label:hover .dice-value {
         color: #f0c040;
         text-shadow: 0 0 12px rgba(240,192,64,0.6), 0 0 4px rgba(0,0,0,0.9);
       }
-      .dice-label.selected {
+      .dice-label.selected .dice-value {
         color: #f0c040;
         background: rgba(240,192,64,0.15);
         text-shadow: 0 0 16px rgba(240,192,64,0.8);
       }
-      .dice-label.kept {
+      .dice-label.kept .dice-value {
         color: #6c6;
         text-shadow: 0 0 12px rgba(68,170,68,0.6);
-        cursor: default;
       }
+      .dice-label.kept { cursor: default; }
 
       #selection-score {
         font-size: 13px;
@@ -252,12 +269,12 @@
     <div id="canvas-area">
       <canvas id="cnv" width="1280" height="960"></canvas>
       <div id="dice-overlay">
-        <div class="dice-label" data-index="0"></div>
-        <div class="dice-label" data-index="1"></div>
-        <div class="dice-label" data-index="2"></div>
-        <div class="dice-label" data-index="3"></div>
-        <div class="dice-label" data-index="4"></div>
-        <div class="dice-label" data-index="5"></div>
+        <div class="dice-label" data-index="0"><span class="dice-value"></span></div>
+        <div class="dice-label" data-index="1"><span class="dice-value"></span></div>
+        <div class="dice-label" data-index="2"><span class="dice-value"></span></div>
+        <div class="dice-label" data-index="3"><span class="dice-value"></span></div>
+        <div class="dice-label" data-index="4"><span class="dice-value"></span></div>
+        <div class="dice-label" data-index="5"><span class="dice-value"></span></div>
       </div>
     </div>
 
