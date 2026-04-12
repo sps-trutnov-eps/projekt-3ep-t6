@@ -24,7 +24,7 @@ const SETTLE_VEL = 0.15;
 const SETTLE_ANG_VEL = 0.3;
 
 // Axis index → dice face number
-const AXIS_TO_FACE = [5, 2, 3, 4, 1, 6];
+const AXIS_TO_FACE = [6, 5, 2, 4, 1, 3];
 
 // --- World setup ---
 const world = new CANNON.World({
