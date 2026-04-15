@@ -195,14 +195,6 @@ function rollDice(indices, side) {
   // Near frame (Z -3.5 to -13.1) = human, Far frame (Z -13.1 to -22.7) = AI
   const zCenter = side === 'far' ? -17.9 : -8.3;
 
-  // Freeze dice NOT being rolled
-  for (let i = 0; i < NUM_DICE; i++) {
-    if (!indices.includes(i)) {
-      dice[i].body.type = CANNON.Body.STATIC;
-      dice[i].body.velocity.set(0, 0, 0);
-      dice[i].body.angularVelocity.set(0, 0, 0);
-    }
-  }
 
   // Launch the dice being rolled
   const count = indices.length;
@@ -329,8 +321,8 @@ function hideDice(indices) {
       b.type = CANNON.Body.STATIC;
       b.velocity.set(0, 0, 0);
       b.angularVelocity.set(0, 0, 0);
-      // Move off-screen behind camera
-      b.position.set(0, FLOOR_Y + HALF_SIZE, 10);
+      // Move far below the floor, out of view
+      b.position.set(0, -50, 0);
     }
   }
 }

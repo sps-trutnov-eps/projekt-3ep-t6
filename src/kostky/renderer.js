@@ -188,6 +188,7 @@ function updateLabels() {
 let then = 0;
 let lastDiceState = [];
 let settleCallback = null;
+let hiddenDiceSet = new Set();  // indices of dice that should not be rendered
 
 function render(now) {
   now *= 0.001;
@@ -205,6 +206,7 @@ function render(now) {
   lastDiceState = diceState;
 
   for (let i = 0; i < diceState.length; i++) {
+    if (hiddenDiceSet.has(i)) continue;
     drawScene(gl, programInfo, buffers, texture, diceState[i].quat, diceState[i].pos);
   }
 
@@ -232,14 +234,21 @@ requestAnimationFrame(render);
 // --- Public API on window ---
 window.diceRenderer = {
   setSeed,
-  hideDice,
+  hideDice(indices) {
+    hideDice(indices);
+    for (const i of indices) hiddenDiceSet.add(i);
+  },
   roll(count, side = 'near') {
+    hiddenDiceSet.clear();
+    const c = count || 6;
+    // Hide dice that aren't part of this roll
+    for (let i = c; i < NUM_DICE; i++) hiddenDiceSet.add(i);
     selectable = false;
     selectedSet.clear();
     shownValues = [];
     for (const l of diceLabels) l.classList.remove('visible');
     const indices = [];
-    for (let i = 0; i < (count || 6); i++) indices.push(i);
+    for (let i = 0; i < c; i++) indices.push(i);
     if (indices.length === 6) rollAllDice(side);
     else rollDice(indices, side);
   },

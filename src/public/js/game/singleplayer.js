@@ -71,14 +71,12 @@ function updateSelectionScore() {
     document.getElementById('btn-confirm').disabled = score === 0;
 }
 
-let lastSeed = 10000;
-
 //  Aktualizace stavu hry
 function updateGameState(gameState) {
     document.getElementById('player-score').textContent    = gameState.p1_score   ?? 0;
     document.getElementById('turn-score').textContent      = gameState.turn_score  ?? 0;
     document.getElementById('dice-left-count').textContent = gameState.dice_left   ?? 6;
-    lastSeed = gameState.last_seed ?? 10000;
+    document.getElementById('opponent-score').textContent  = gameState.p2_score   ?? 0;
 
     if (gameState.status === 'FINISHED') {
         showFinished();
@@ -95,22 +93,43 @@ function showFinished() {
 async function rollDice() {
     setButtonsDisabled(true);
 
-    // Trigger 3D dice animation
     const diceLeft = parseInt(document.getElementById('dice-left-count').textContent) || 6;
+
+    // Cheat override: skip physics, send pre-determined values
+    if (cheatOverride) {
+        const values = cheatOverride;
+        cheatOverride = null;
+        if (window.diceRenderer) {
+            window.diceRenderer.roll(diceLeft);
+            window.diceRenderer.onSettle(async () => {
+                await executeServerRoll(values);
+            });
+        } else {
+            await executeServerRoll(values);
+        }
+        return;
+    }
+
     if (window.diceRenderer) {
-        window.diceRenderer.setSeed(lastSeed);
         window.diceRenderer.roll(diceLeft);
         window.diceRenderer.onSettle(async () => {
-            await executeServerRoll();
+            const physicsValues = window.diceRenderer.getValues().slice(0, diceLeft);
+            await executeServerRoll(physicsValues);
         });
     } else {
-        await executeServerRoll();
+        const fallback = [];
+        for (let i = 0; i < diceLeft; i++) fallback.push(Math.floor(Math.random() * 6) + 1);
+        await executeServerRoll(fallback);
     }
 }
 
-async function executeServerRoll() {
+async function executeServerRoll(diceValues) {
     try {
-        const res  = await fetch('/game/roll', { method: 'POST' });
+        const res  = await fetch('/game/roll', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ diceValues }),
+        });
         const data = await res.json();
 
         if (!data.success) {
@@ -122,9 +141,7 @@ async function executeServerRoll() {
         const gameState = data.gameState;
         updateGameState(gameState);
 
-        currentRoll = data.bustRoll || (Array.isArray(gameState.last_roll)
-            ? gameState.last_roll
-            : JSON.parse(gameState.last_roll ?? '[]'));
+        currentRoll = data.bustRoll || diceValues;
 
         if (data.bust) {
             if (window.diceRenderer) window.diceRenderer.showValues(currentRoll);
@@ -162,7 +179,7 @@ function enterSelectPhase() {
     document.getElementById('btn-reroll').style.display  = 'none';
     document.getElementById('btn-bank').style.display    = 'none';
     document.getElementById('btn-confirm').disabled      = true;
-    document.getElementById('selection-score-row').style.display = 'flex';
+    document.getElementById('selection-score-row').style.display = 'block';
     document.getElementById('bust-msg').style.display    = 'none';
 }
 
@@ -269,9 +286,8 @@ function enterRollPhase() {
 async function executeNpcTurn() {
     setButtonsDisabled(true);
     
-    // Npc rolls all 6 dice
+    // NPC dice animation (purely visual, server is authoritative for NPC values)
     if (window.diceRenderer) {
-        window.diceRenderer.setSeed(lastSeed);
         window.diceRenderer.roll(6, 'far');
     }
 
@@ -345,7 +361,9 @@ async function getGameState() {
 
 getGameState();
 
-// Cheat function
+// Cheat function — overrides next roll with server-generated values
+let cheatOverride = null;
+
 window.gimme = async function(score) {
     try {
         const res = await fetch('/game/cheat', {
@@ -355,9 +373,8 @@ window.gimme = async function(score) {
         });
         const data = await res.json();
         if (data.success) {
-            console.log('%c🎲 CHEAT ACTIVATED: ' + data.message, 'color: #cf763b; font-weight: bold; font-size: 14px;');
-            // Update lastSeed locally so 3D renderer matches backend
-            await getGameState(); 
+            console.log('%c CHEAT ACTIVATED: ' + data.message, 'color: #cf763b; font-weight: bold; font-size: 14px;');
+            cheatOverride = data.cheatRoll;
             // Roll automatically!
             if (!document.getElementById('btn-roll').disabled && document.getElementById('btn-roll').style.display !== 'none') {
                 rollDice();
