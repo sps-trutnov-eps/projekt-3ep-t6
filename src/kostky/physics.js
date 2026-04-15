@@ -24,7 +24,7 @@ const SETTLE_VEL = 0.15;
 const SETTLE_ANG_VEL = 0.3;
 
 // Axis index → dice face number
-const AXIS_TO_FACE = [5, 2, 3, 4, 1, 6];
+const AXIS_TO_FACE = [6, 5, 2, 4, 1, 3];
 
 // --- World setup ---
 const world = new CANNON.World({
@@ -175,6 +175,19 @@ function rollAllDice(side) {
   rollDice(indices, side);
 }
 
+let prng = Math.random;
+
+function setSeed(seed) {
+  let s = seed;
+  prng = function() {
+    s |= 0;
+    s = s + 0x6D2B79F5 | 0;
+    let t = Math.imul(s ^ s >>> 15, 1 | s);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
 function rollDice(indices, side) {
   if (!bodiesCreated) createBodies();
   side = side || 'near';
@@ -207,27 +220,27 @@ function rollDice(indices, side) {
     // Spawn spread out along X within the frame
     const spread = count > 1 ? (j / (count - 1)) * 5 - 2.5 : 0;
     b.position.set(
-      spread + (Math.random() - 0.5) * 0.5,
-      2 + j * 1.5 + Math.random() * 0.5,
-      zCenter + (Math.random() - 0.5) * 1.5,
+      spread + (prng() - 0.5) * 0.5,
+      2 + j * 1.5 + prng() * 0.5,
+      zCenter + (prng() - 0.5) * 1.5,
     );
 
     b.velocity.set(
-      (Math.random() - 0.5) * 4,
-      -3 - Math.random() * 2,
-      (Math.random() - 0.5) * 3,
+      (prng() - 0.5) * 4,
+      -3 - prng() * 2,
+      (prng() - 0.5) * 3,
     );
 
     b.quaternion.setFromEuler(
-      Math.random() * Math.PI * 2,
-      Math.random() * Math.PI * 2,
-      Math.random() * Math.PI * 2,
+      prng() * Math.PI * 2,
+      prng() * Math.PI * 2,
+      prng() * Math.PI * 2,
     );
 
     b.angularVelocity.set(
-      (Math.random() - 0.5) * 15,
-      (Math.random() - 0.5) * 15,
-      (Math.random() - 0.5) * 15,
+      (prng() - 0.5) * 15,
+      (prng() - 0.5) * 15,
+      (prng() - 0.5) * 15,
     );
   }
 }
@@ -288,9 +301,9 @@ function loop(dt) {
         // Check if stacked on another die (Y too high above floor)
         if (b.position.y > FLOOR_Y + HALF_SIZE + 1.5) {
           // Nudge sideways and let it re-settle
-          b.position.x += (Math.random() - 0.5) * 4;
+          b.position.x += (prng() - 0.5) * 4;
           b.position.y = FLOOR_Y + HALF_SIZE + 3;
-          b.velocity.set((Math.random() - 0.5) * 2, -2, (Math.random() - 0.5) * 2);
+          b.velocity.set((prng() - 0.5) * 2, -2, (prng() - 0.5) * 2);
           b.wakeUp();
           continue;
         }
@@ -308,4 +321,18 @@ function loop(dt) {
   }));
 }
 
-export { loop, dice, rollAllDice, rollDice, getDiceValues, allSettled, NUM_DICE };
+function hideDice(indices) {
+  if (!bodiesCreated) return;
+  for (const i of indices) {
+    if (i < NUM_DICE) {
+      const b = dice[i].body;
+      b.type = CANNON.Body.STATIC;
+      b.velocity.set(0, 0, 0);
+      b.angularVelocity.set(0, 0, 0);
+      // Move off-screen behind camera
+      b.position.set(0, FLOOR_Y + HALF_SIZE, 10);
+    }
+  }
+}
+
+export { loop, dice, rollAllDice, rollDice, getDiceValues, allSettled, NUM_DICE, setSeed, hideDice };

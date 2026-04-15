@@ -1,7 +1,7 @@
 // TODO: vrátit skóre
 
 // přijímá např [1, 1, 5, 2, 3, 5] a vrací skóre a kolik kostek zůstává
-function checkCurrentScore(chosenDice) {
+function checkCurrentScore(chosenDice, strict = false) {
     // počet daného čísla, např 3 na druhém místě znamená, že máme tři dvojky
     let diceLeft = [0,0,0,0,0,0]; 
     let score = 0;
@@ -47,7 +47,17 @@ function checkCurrentScore(chosenDice) {
 
     // jedničky a pětky
     score += diceLeft[0] * 100; // každá jednička stojí 100 bodů
+    diceLeft[0] = 0;
     score += diceLeft[4] * 50;  // každá pětka stojí 50 bodů
+    diceLeft[4] = 0;
+
+    // Zkontrolujeme, jestli zbyly nějaké kostky, které nepřinesly body
+    if (strict) {
+        const remaining = diceLeft.reduce((sum, count) => sum + count, 0);
+        if (remaining > 0) {
+            return 0; // Neplatný výběr (obsahuje kostky bez bodů)
+        }
+    }
 
     return score;
 };

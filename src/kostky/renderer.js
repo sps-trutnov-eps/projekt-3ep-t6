@@ -6,7 +6,7 @@
 */
 import { initBuffers, initTableBuffers, initFrameBuffers } from "/kostky/init-buffers.js";
 import { drawScene } from "/kostky/draw.js";
-import { loop, rollAllDice, rollDice, getDiceValues, allSettled, NUM_DICE } from "/kostky/physics.js";
+import { loop, rollAllDice, rollDice, getDiceValues, allSettled, NUM_DICE, setSeed, hideDice } from "/kostky/physics.js";
 
 const { mat4 } = window;
 
@@ -231,15 +231,17 @@ requestAnimationFrame(render);
 
 // --- Public API on window ---
 window.diceRenderer = {
-  roll(count) {
+  setSeed,
+  hideDice,
+  roll(count, side = 'near') {
     selectable = false;
     selectedSet.clear();
     shownValues = [];
     for (const l of diceLabels) l.classList.remove('visible');
     const indices = [];
     for (let i = 0; i < (count || 6); i++) indices.push(i);
-    if (indices.length === 6) rollAllDice('near');
-    else rollDice(indices, 'near');
+    if (indices.length === 6) rollAllDice(side);
+    else rollDice(indices, side);
   },
   onSettle(cb) {
     settleCallback = cb;
