@@ -1,17 +1,18 @@
 const GAME_ID   = document.getElementById('game-id').textContent.trim();
 const MY_ID     = parseInt(document.getElementById('player-id').textContent.trim());
 
-let gameState       = null;
-let selectedDice    = [];
-let pollInterval    = null;
-let waitingForOther = false;
+let gameState        = null;
+let selectedDice     = [];
+let pollInterval     = null;
+let waitingForOther  = false;
+let awaitingReroll   = false;  // true po confirmSelection, dokud nepřijde nový hod
 
-// init 
+// init
 document.addEventListener('DOMContentLoaded', async () => {
     await fetchState();
 });
 
-// polling (když čekáme na soupeře) 
+// polling (když čekáme na soupeře)
 function startPolling() {
     if (pollInterval) return;
     pollInterval = setInterval(async () => {
@@ -26,7 +27,7 @@ function stopPolling() {
     }
 }
 
-// fetch stavu hry 
+// fetch stavu hry
 async function fetchState() {
     try {
         const res  = await fetch(`/game/multiplayer/${GAME_ID}/state`);
@@ -37,16 +38,16 @@ async function fetchState() {
     }
 }
 
-// render 
+// render
 function renderState(g) {
     const isMyTurn  = g.current_turn_id === MY_ID;
     const isPlayer1 = g.player1_id === MY_ID;
     const myScore   = isPlayer1 ? g.p1_score : g.p2_score;
     const oppScore  = isPlayer1 ? g.p2_score : g.p1_score;
 
-    document.getElementById('player-score').textContent  = myScore;
+    document.getElementById('player-score').textContent   = myScore;
     document.getElementById('opponent-score').textContent = oppScore;
-    document.getElementById('turn-score').textContent    = g.turn_score;
+    document.getElementById('turn-score').textContent     = g.turn_score;
     document.getElementById('dice-left-count').textContent = g.dice_left;
 
     // Indikátor tahu
@@ -86,6 +87,12 @@ function renderState(g) {
                 <line x1="9" y1="9" x2="15" y2="15"/>
             </svg>
             Prohráli jste.`;
+
+        document.getElementById('game-finished').style.display = 'block';
+        document.getElementById('action-area').style.display   = 'none';
+        document.getElementById('dice-area').innerHTML         = '';
+        stopPolling();
+        return;
     }
 
     // Přepnutí polling / aktivní UI
@@ -94,7 +101,6 @@ function renderState(g) {
         startPolling();
         setButtonsWaiting();
 
-        // Zobraz bust soupeře pokud padlo
         const lastRoll = Array.isArray(g.last_roll) ? g.last_roll : JSON.parse(g.last_roll ?? '[]');
         renderDicePassive(lastRoll);
         return;
@@ -102,24 +108,26 @@ function renderState(g) {
 
     // Je můj tah
     stopPolling();
-waitingForOther = false;
+    waitingForOther = false;
 
-const lastRoll = Array.isArray(g.last_roll) ? g.last_roll : JSON.parse(g.last_roll ?? '[]');
+    const lastRoll = Array.isArray(g.last_roll) ? g.last_roll : JSON.parse(g.last_roll ?? '[]');
 
-if (lastRoll.length > 0) {
-    // Hod proběhl — čeká se na výběr
-    renderDiceActive(lastRoll);
-    showButtonsAfterRoll();
-} else {
-    // Nové kolo — čeká se na hod
-    renderDiceEmpty(g.dice_left);
-    showButtonsBeforeRoll(); 
-}
+    if (lastRoll.length > 0 && !awaitingReroll) {
+        // Hod proběhl — čeká se na výběr
+        renderDiceActive(lastRoll);
+        enterSelectPhase();
+    } else if (awaitingReroll) {
+        // Po confirmSelection — čekáme na další hod, UI řídí enterPostConfirmPhase
+    } else {
+        // Nové kolo — čeká se na hod
+        renderDiceEmpty(g.dice_left);
+        enterRollPhase();
+    }
 
     hideBust();
 }
 
-// dice rendering 
+// dice rendering
 function renderDiceActive(roll) {
     selectedDice = [];
     const area   = document.getElementById('dice-area');
@@ -151,6 +159,26 @@ function renderDiceEmpty(count) {
     }
 }
 
+function renderLockedDice(roll, selected, remaining) {
+    const area = document.getElementById('dice-area');
+    area.innerHTML = '';
+
+    roll.forEach((val, idx) => {
+        if (!selected.find(d => d.idx === idx)) return;
+        const div = document.createElement('div');
+        div.className = 'dice-die locked';
+        div.appendChild(makeDiceFace(val));
+        area.appendChild(div);
+    });
+
+    for (let i = 0; i < remaining; i++) {
+        const div = document.createElement('div');
+        div.className = 'dice-die empty';
+        div.appendChild(makeDiceFace(0));
+        area.appendChild(div);
+    }
+}
+
 function makeDie(value, idx, clickable) {
     const die = document.createElement('div');
     die.className = 'dice-die';
@@ -164,7 +192,6 @@ function makeDie(value, idx, clickable) {
 }
 
 function makeDiceFace(value) {
-    // Stejná implementace jako v singleplayer.js
     const grid = document.createElement('div');
     grid.className = 'dice-face-grid';
 
@@ -214,26 +241,26 @@ function updateSelectionScore() {
     const span   = document.getElementById('selection-score');
 
     if (vals.length > 0) {
-        row.style.display  = 'flex';
-        span.textContent   = points;
-        span.style.color   = points > 0 ? '#cf763b' : '#7f3004';
+        row.style.display = 'flex';
+        span.textContent  = points;
+        span.style.color  = points > 0 ? '#cf763b' : '#7f3004';
     } else {
-        row.style.display  = 'none';
+        row.style.display = 'none';
     }
 
     const btnConfirm = document.getElementById('btn-confirm');
     if (btnConfirm) btnConfirm.disabled = points === 0 || vals.length === 0;
 }
 
-// score engine (mirror ze serveru) 
+// score engine (mirror ze serveru)
 function checkScore(dice) {
     let counts = [0,0,0,0,0,0];
     let score  = 0;
     for (const d of dice) counts[d - 1]++;
 
-    if (counts.every(c => c >= 1))                    { score += 1500; counts = [0,0,0,0,0,0]; }
-    else if (counts.slice(1).every(c => c >= 1))       { score += 750;  for (let i=1;i<6;i++) counts[i]--; }
-    else if (counts.slice(0,5).every(c => c >= 1))     { score += 500;  for (let i=0;i<5;i++) counts[i]--; }
+    if (counts.every(c => c >= 1))                { score += 1500; counts = [0,0,0,0,0,0]; }
+    else if (counts.slice(1).every(c => c >= 1))  { score += 750;  for (let i=1;i<6;i++) counts[i]--; }
+    else if (counts.slice(0,5).every(c => c >= 1)){ score += 500;  for (let i=0;i<5;i++) counts[i]--; }
 
     if (counts[0] >= 3) { score += 1000 * Math.pow(2, counts[0]-3); counts[0] = 0; }
     for (let i=1;i<6;i++) {
@@ -244,27 +271,34 @@ function checkScore(dice) {
     return score;
 }
 
-// akce 
+// akce
 async function rollDice() {
+    awaitingReroll = false;
     try {
         const res  = await fetch(`/game/multiplayer/${GAME_ID}/roll`, { method: 'POST' });
         const data = await res.json();
         if (!data.success) return alert(data.error);
 
+        gameState = data.gameState;
+
         if (data.bust) {
+            const roll = Array.isArray(gameState.last_roll)
+                ? gameState.last_roll
+                : JSON.parse(gameState.last_roll ?? '[]');
+            renderDicePassive(roll);
             showBust();
-            gameState = data.gameState;
+            enterRollPhase();   // tah přešel na soupeře — polling se spustí přes renderState
             renderState(gameState);
             return;
         }
 
-        gameState = data.gameState;
         const roll = Array.isArray(gameState.last_roll)
             ? gameState.last_roll
             : JSON.parse(gameState.last_roll ?? '[]');
 
         renderDiceActive(roll);
-        showButtonsAfterRoll();
+        enterSelectPhase();
+        hideBust();
     } catch (err) {
         console.error('rollDice error:', err);
     }
@@ -285,23 +319,25 @@ async function confirmSelection() {
 
         gameState = data.gameState;
 
-        // Po potvrzení výběru — zobraz zbývající kostky a tlačítka pro další akci
+        if (gameState.status === 'FINISHED') {
+            renderState(gameState);
+            return;
+        }
+
         const remaining = gameState.dice_left;
-        renderDiceEmpty(remaining);
+
+        // Zobraz zamčené (vybrané) kostky + prázdné zbývající
+        const lastRoll = Array.isArray(gameState.last_roll)
+            ? gameState.last_roll
+            : JSON.parse(gameState.last_roll ?? '[]');
+        renderLockedDice(lastRoll, selectedDice, remaining);
+
         selectedDice = [];
+        awaitingReroll = true;
         document.getElementById('selection-score-row').style.display = 'none';
         document.getElementById('turn-score').textContent = gameState.turn_score;
 
-        // Zobraz hodit znovu + bankovat
-        document.getElementById('btn-roll').style.display    = 'none';
-        document.getElementById('btn-confirm').style.display = 'none';
-        document.getElementById('btn-reroll').style.display  = 'block';
-        document.getElementById('btn-bank').style.display    = 'block';
-
-        // Pokud hra skončila
-        if (gameState.status === 'FINISHED') {
-            renderState(gameState);
-        }
+        enterPostConfirmPhase(remaining);
 
     } catch (err) {
         console.error('confirmSelection error:', err);
@@ -325,19 +361,34 @@ async function bankPoints() {
     }
 }
 
-// UI helpers
-function showButtonsBeforeRoll() {
-    document.getElementById('btn-roll').style.display    = 'block';
+// UI helpers — fáze shodné se singleplayerem
+function enterRollPhase() {
+    document.getElementById('btn-roll').style.display    = 'inline-block';
     document.getElementById('btn-confirm').style.display = 'none';
     document.getElementById('btn-reroll').style.display  = 'none';
     document.getElementById('btn-bank').style.display    = 'none';
+    document.getElementById('selection-score-row').style.display = 'none';
 }
 
-function showButtonsAfterRoll() {
+function enterSelectPhase() {
     document.getElementById('btn-roll').style.display    = 'none';
-    document.getElementById('btn-confirm').style.display = 'block';
+    document.getElementById('btn-confirm').style.display = 'inline-block';
     document.getElementById('btn-reroll').style.display  = 'none';
-    document.getElementById('btn-bank').style.display    = gameState?.turn_score > 0 ? 'block' : 'none';
+    document.getElementById('btn-bank').style.display    = 'none';
+    document.getElementById('btn-confirm').disabled      = true;
+    document.getElementById('selection-score-row').style.display = 'flex';
+    hideBust();
+}
+
+function enterPostConfirmPhase(diceLeft) {
+    document.getElementById('btn-roll').style.display    = 'none';
+    document.getElementById('btn-confirm').style.display = 'none';
+    document.getElementById('btn-reroll').style.display  = 'inline-block';
+    document.getElementById('btn-bank').style.display    = 'inline-block';
+
+    const d = diceLeft;
+    document.getElementById('btn-reroll').textContent =
+        `Hodit znovu (${d} ${d === 1 ? 'kostka' : d < 5 ? 'kostky' : 'kostek'})`;
 }
 
 function setButtonsWaiting() {
@@ -345,6 +396,7 @@ function setButtonsWaiting() {
     document.getElementById('btn-confirm').style.display = 'none';
     document.getElementById('btn-reroll').style.display  = 'none';
     document.getElementById('btn-bank').style.display    = 'none';
+    document.getElementById('selection-score-row').style.display = 'none';
 }
 
 function showBust() {
