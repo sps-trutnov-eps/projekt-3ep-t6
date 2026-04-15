@@ -28,7 +28,7 @@
   .game-header h1 { margin-bottom: 0.25rem; }
   .game-header .game-meta {
     font-size: 0.95rem;
-    color: #c8bdb0;
+    color: #2c3e50;
   }
 
   /* Middle row: canvas centered, side panel offset to the right */
@@ -39,11 +39,17 @@
     justify-content: center;
   }
 
+  /* Anchor for canvas + side panel positioning */
+  .canvas-anchor {
+    position: relative;
+    width: 100%;
+    max-width: 700px;
+  }
+
   /* Canvas wrapper */
   #dice-3d-wrap {
     position: relative;
     width: 100%;
-    max-width: 700px;
     aspect-ratio: 4/3;
     min-height: 350px;
     border-radius: 8px;
@@ -102,11 +108,12 @@
   }
   .dice-label.kept { cursor: default; }
 
-  /* Side panel: turn scores, positioned to the right of canvas */
+  /* Side panel: turn scores, anchored to right edge of canvas */
   .game-side-panel {
     position: absolute;
-    right: 0;
+    left: 100%;
     top: 0;
+    margin-left: 1rem;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -115,10 +122,11 @@
     border-radius: 0;
     border: 3px solid transparent;
     border-image: linear-gradient(135deg, #7f3004, #cf763b, #b4901e, #cf763b, #7f3004) 1;
+    white-space: nowrap;
   }
   .game-side-panel .score-label {
     font-size: 0.85rem;
-    color: #c8bdb0;
+    color: #2c3e50;
   }
   .game-side-panel .score-value {
     font-size: 1.4rem;
@@ -186,34 +194,35 @@
     </div>
 
     <div class="game-middle">
-        <div id="dice-3d-wrap">
-            <div id="canvas-score-overlay"><span id="player-score">0</span></div>
-            <canvas id="cnv" width="640" height="480"></canvas>
-            <div id="dice-overlay">
-                <div class="dice-label" data-index="0"><span class="dice-value"></span></div>
-                <div class="dice-label" data-index="1"><span class="dice-value"></span></div>
-                <div class="dice-label" data-index="2"><span class="dice-value"></span></div>
-                <div class="dice-label" data-index="3"><span class="dice-value"></span></div>
-                <div class="dice-label" data-index="4"><span class="dice-value"></span></div>
-                <div class="dice-label" data-index="5"><span class="dice-value"></span></div>
+        <div class="canvas-anchor">
+            <div id="dice-3d-wrap">
+                <div id="canvas-score-overlay"><span id="player-score">0</span></div>
+                <canvas id="cnv" width="640" height="480"></canvas>
+                <div id="dice-overlay">
+                    <div class="dice-label" data-index="0"><span class="dice-value"></span></div>
+                    <div class="dice-label" data-index="1"><span class="dice-value"></span></div>
+                    <div class="dice-label" data-index="2"><span class="dice-value"></span></div>
+                    <div class="dice-label" data-index="3"><span class="dice-value"></span></div>
+                    <div class="dice-label" data-index="4"><span class="dice-value"></span></div>
+                    <div class="dice-label" data-index="5"><span class="dice-value"></span></div>
+                </div>
             </div>
-        </div>
-
-        <div class="game-side-panel">
-            <div>
-                <div class="score-label">Skore protivnika</div>
-                <div class="score-value" id="opponent-score">0</div>
-            </div>
-            <div>
-                <div class="score-label">Body na stole</div>
-                <div class="score-value" id="turn-score">0</div>
-            </div>
-            <div id="selection-score-row" style="display:none;">
-                <div class="score-label">Body za vyber</div>
-                <div class="score-value" id="selection-score">0</div>
-            </div>
-            <div id="bust-msg" class="bust-message" style="display:none;">
-                Farkle! Prisel jsi o body v tomto kole.
+            <div class="game-side-panel">
+                <div>
+                    <div class="score-label">Skore protivnika</div>
+                    <div class="score-value" id="opponent-score">0</div>
+                </div>
+                <div>
+                    <div class="score-label">Body na stole</div>
+                    <div class="score-value" id="turn-score">0</div>
+                </div>
+                <div id="selection-score-row" style="display:none;">
+                    <div class="score-label">Body za vyber</div>
+                    <div class="score-value" id="selection-score">0</div>
+                </div>
+                <div id="bust-msg" class="bust-message" style="display:none;">
+                    Farkle! Prisel jsi o body v tomto kole.
+                </div>
             </div>
         </div>
     </div>
