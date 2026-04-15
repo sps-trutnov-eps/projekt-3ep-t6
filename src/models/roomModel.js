@@ -11,10 +11,16 @@ class Room {
         room_type VARCHAR(10) DEFAULT 'PRIVATE',
         invite_code VARCHAR(5) UNIQUE,
         status VARCHAR(20) DEFAULT 'WAITING',
+        target_score INTEGER DEFAULT 3000,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
-    return db.query(sql);
+    await db.query(sql);
+    
+    // Migration: add target_score if it doesn't exist
+    await db.query(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS target_score INTEGER DEFAULT 3000`);
+    
+    return;
   }
 
   static generateCode() {
@@ -38,16 +44,16 @@ class Room {
     return code;
   }
 
-  static async create(creatorId, isPrivate = true) {
+  static async create(creatorId, isPrivate = true, targetScore = 3000) {
     const roomType = isPrivate ? 'PRIVATE' : 'PUBLIC';
     const inviteCode = await this.generateUniqueCode();
 
     const sql = `
-      INSERT INTO rooms (creator_id, room_type, invite_code)
-      VALUES ($1, $2, $3)
+      INSERT INTO rooms (creator_id, room_type, invite_code, target_score)
+      VALUES ($1, $2, $3, $4)
       RETURNING *;
     `;
-    const { rows } = await db.query(sql, [creatorId, roomType, inviteCode]);
+    const { rows } = await db.query(sql, [creatorId, roomType, inviteCode, targetScore]);
     return rows[0];
   }
 
