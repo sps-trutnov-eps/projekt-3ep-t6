@@ -22,14 +22,18 @@ exports.createRoom = async (req, res) => {
       return res.status(401).json({ error: 'Nejsi přihlášen' });
     }
 
-    const room = await Room.create(req.session.user.id, true); // vychozi je private
+    const { targetScore } = req.body;
+    const score = targetScore ? parseInt(targetScore) : 3000;
+
+    const room = await Room.create(req.session.user.id, true, score); // vychozi je private
 
     res.json({
       success: true,
       room: {
         id: room.id,
         code: room.invite_code,
-        type: room.room_type
+        type: room.room_type,
+        targetScore: room.target_score
       }
     });
   } catch (err) {
@@ -189,7 +193,7 @@ exports.startGame = async (req, res) => {
     if (room.creator_id !== req.session.user.id) return res.status(403).json({ error: 'Nejsi tvůrce' });
     if (room.status !== 'READY') return res.status(400).json({ error: 'Čeká se na druhého hráče' });
 
-    const game = await Game.create(room.creator_id, room.player2_id);
+    const game = await Game.create(room.creator_id, room.player2_id, room.target_score);
     await Room.startGame(room.id, game.id);
 
     res.json({ success: true, gameId: game.id });
@@ -208,6 +212,7 @@ exports.getWaitingPage = async (req, res) => {
     res.render('matchmaking/waiting', {
       title: 'Čekám na hru',
       roomCode: room.invite_code,
+      targetScore: room.target_score
     });
   } catch (err) {
     console.error('getWaitingPage error:', err);
