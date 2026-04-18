@@ -1,14 +1,15 @@
 <%- include('../partials/header') %>
 
 <div class="container">
-    <h1><%= message %></h1>
+    <h1>Dice Game</h1>
 
     <div class="home-intro">
-        <p>Vítejte v Dice Game! Klasická kostková hra Farkle v moderním kabátě. Strategie, risk a trocha štěstí — to je vše, co potřebujete k vítězství.</p>
-        <p>Sbírejte body, riskujte pro vyšší skóre, ale pozor na <strong>Farkle</strong>! Kdo první dosáhne cílového skóre, vyhrává.</p>
-        <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center;">
-            <a href="/game/singleplayer" class="btn-primary">Hrát proti PC</a>
-            <a href="/matchmaking/lobby" class="btn-secondary">Online multiplayer</a>
+        <p>Kostková hra Farkle — hraj sám proti počítači nebo vyzvi přítele v multiplayeru.</p>
+        <p>Hraj sám proti chudému starci, nebo si vytvoř místnost a pozvi kamaráda kódem. Podporujeme také náhodné párování s ostatními hráči.</p>
+        <p>Sbírej body, riskuj pro vyšší skóre — ale pozor na <strong>Farkle</strong>. Kdo první dosáhne cílového skóre, vyhrává.</p>
+        <div style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="/matchmaking" class="btn-primary" style="padding: 10px 20px;">Hrát</a>
+            <a href="/stats" class="btn-secondary" style="padding: 10px 20px;">Žebříček</a>
         </div>
     </div>
 </div>
