@@ -354,16 +354,40 @@ async function bankPoints() {
     }
 }
 
-// UI helpers
-function showButtonsBeforeRoll() {
+async function showButtonsBeforeRoll() {
     document.getElementById('btn-roll').style.display    = 'block';
     document.getElementById('btn-confirm').style.display = 'none';
     document.getElementById('btn-reroll').style.display  = 'none';
     document.getElementById('btn-bank').style.display    = 'none';
+
+    // Wild dice logic
+    const btnWild = document.getElementById('btn-wild');
+    if (btnWild) {
+        const isPlayer1 = gameState.player1_id === MY_ID;
+        const wildUsed = isPlayer1 ? gameState.p1_wild_used : gameState.p2_wild_used;
+        
+        if (!wildUsed) {
+            try {
+                const res = await fetch('/matchmaking/friends'); // Hack: getting user info
+                const userData = await fetch('/auth/me').then(r => r.json()); // Potřebujeme me endpoint nebo poslat s game state
+                
+                // Fetch user streak from server or include in game state
+                // Pro jednoduchost předpokládáme že controller posílá streak v game state (upravíme)
+                if (gameState.user_streak >= 3) {
+                    btnWild.style.display = 'block';
+                } else {
+                    btnWild.style.display = 'none';
+                }
+            } catch(e) { btnWild.style.display = 'none'; }
+        } else {
+            btnWild.style.display = 'none';
+        }
+    }
 }
 
 function showButtonsAfterRoll() {
     document.getElementById('btn-roll').style.display    = 'none';
+    document.getElementById('btn-wild').style.display    = 'none';
     document.getElementById('btn-confirm').style.display = 'block';
     document.getElementById('btn-reroll').style.display  = 'none';
     document.getElementById('btn-bank').style.display    = 'none';
