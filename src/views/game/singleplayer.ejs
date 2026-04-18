@@ -11,7 +11,7 @@
             <div class="finished-banner">
                 <p>🏆 Vyhráli jste! Gratulujeme!</p>
             </div>
-            <form action="/game/singleplayer/new" method="POST" style="margin-top: 1rem;">
+            <form action="#" method="POST" style="margin-top: 1rem;" onsubmit="startNewSingleplayerGame(event)">
                 <button type="submit" class="btn-primary">Začít novou hru</button>
             </form>
         </div>
@@ -24,7 +24,7 @@
                     <p>Hrajete proti: <span id="opponent-name">Chudý starec</span></p>
                     <p>Vaše celkové skóre: <span id="player-score">0</span></p>
                     <p>Skóre soupeře: <span id="opponent-score">0</span></p>
-                    <p>Cíl: <span>10 000</span></p>
+                    <p>Cíl: <span id="target-score">3000</span></p>
                 </div>
 
                 <div class="game-board">

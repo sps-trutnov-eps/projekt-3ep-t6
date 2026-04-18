@@ -47,7 +47,8 @@ function renderState(g) {
 
     document.getElementById('player-score').textContent   = myScore;
     document.getElementById('opponent-score').textContent = oppScore;
-    document.getElementById('turn-score').textContent     = g.turn_score;
+    document.getElementById('target-score').textContent = g.target_score ?? 3000;
+    document.getElementById('turn-score').textContent    = g.turn_score;
     document.getElementById('dice-left-count').textContent = g.dice_left;
 
     // Indikátor tahu
@@ -237,19 +238,20 @@ function toggleDie(die) {
 function updateSelectionScore() {
     const vals   = selectedDice.map(d => d.val);
     const points = vals.length > 0 ? checkScore(vals) : 0;
+    const valid  = vals.length > 0 ? isSelectionValid(vals) : false;
     const row    = document.getElementById('selection-score-row');
     const span   = document.getElementById('selection-score');
 
     if (vals.length > 0) {
-        row.style.display = 'flex';
-        span.textContent  = points;
-        span.style.color  = points > 0 ? '#cf763b' : '#7f3004';
+        row.style.display  = 'flex';
+        span.textContent   = points;
+        span.style.color   = valid ? '#cf763b' : '#7f3004';
     } else {
         row.style.display = 'none';
     }
 
     const btnConfirm = document.getElementById('btn-confirm');
-    if (btnConfirm) btnConfirm.disabled = points === 0 || vals.length === 0;
+    if (btnConfirm) btnConfirm.disabled = !valid;
 }
 
 // score engine (mirror ze serveru)
@@ -271,7 +273,25 @@ function checkScore(dice) {
     return score;
 }
 
-// akce
+function isSelectionValid(chosenDice) {
+    if (!chosenDice || chosenDice.length === 0) return false;
+    let diceLeft = [0, 0, 0, 0, 0, 0];
+    for (let die of chosenDice) diceLeft[die - 1]++;
+
+    if (diceLeft.every(c => c >= 1)) return true;
+    if (diceLeft.slice(1).every(c => c >= 1) && chosenDice.length === 5) return true;
+    if (diceLeft.slice(0, 5).every(c => c >= 1) && chosenDice.length === 5) return true;
+
+    for (let i = 0; i < 6; i++) {
+        if (diceLeft[i] >= 3) diceLeft[i] = 0;
+    }
+    diceLeft[0] = 0;
+    diceLeft[4] = 0;
+
+    return diceLeft.every(c => c === 0);
+}
+
+// akce 
 async function rollDice() {
     awaitingReroll = false;
     try {

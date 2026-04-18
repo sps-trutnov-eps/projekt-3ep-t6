@@ -52,4 +52,36 @@ function checkCurrentScore(chosenDice) {
     return score;
 };
 
-module.exports = { checkCurrentScore };
+/**
+ * Ověří, zda všechny vybrané kostky přispívají ke skóre.
+ * Farkle pravidla: hráč smí odložit jen ty kostky, které samy o sobě nebo v kombinaci skórují.
+ */
+function isSelectionValid(chosenDice) {
+    if (!chosenDice || chosenDice.length === 0) return false;
+    
+    let diceLeft = [0, 0, 0, 0, 0, 0];
+    for (let die of chosenDice) {
+        diceLeft[die - 1]++;
+    }
+
+    // 1. Postupky (všechny kostky se spotřebují)
+    if (diceLeft.every(c => c >= 1)) return true; // 1-6
+    if (diceLeft.slice(1).every(c => c >= 1) && chosenDice.length === 5) return true; // 2-6
+    if (diceLeft.slice(0, 5).every(c => c >= 1) && chosenDice.length === 5) return true; // 1-5
+
+    // 2. Trojice a více (tyto kostky skórují)
+    for (let i = 0; i < 6; i++) {
+        if (diceLeft[i] >= 3) {
+            diceLeft[i] = 0; // Tyto jsou validní, vynulujeme je
+        }
+    }
+
+    // 3. Zbylé jedničky a pětky skórují
+    diceLeft[0] = 0; // Jedničky
+    diceLeft[4] = 0; // Pětky
+
+    // Pokud po odečtení všech skórujících kombinací/kostek něco zbylo, výběr je nevalidní
+    return diceLeft.every(c => c === 0);
+}
+
+module.exports = { checkCurrentScore, isSelectionValid };

@@ -35,6 +35,24 @@ function checkCurrentScore(chosenDice) {
     return score;
 }
 
+function isSelectionValid(chosenDice) {
+    if (!chosenDice || chosenDice.length === 0) return false;
+    let diceLeft = [0, 0, 0, 0, 0, 0];
+    for (let die of chosenDice) diceLeft[die - 1]++;
+
+    if (diceLeft.every(c => c >= 1)) return true;
+    if (diceLeft.slice(1).every(c => c >= 1) && chosenDice.length === 5) return true;
+    if (diceLeft.slice(0, 5).every(c => c >= 1) && chosenDice.length === 5) return true;
+
+    for (let i = 0; i < 6; i++) {
+        if (diceLeft[i] >= 3) diceLeft[i] = 0;
+    }
+    diceLeft[0] = 0;
+    diceLeft[4] = 0;
+
+    return diceLeft.every(c => c === 0);
+}
+
 //  Stav frontendu
 let currentRoll     = [];
 let selectedDice    = [];
@@ -84,14 +102,21 @@ function toggleDie(idx) {
 function updateSelectionScore() {
     const chosen = currentRoll.filter((_, i) => selectedDice[i]);
     const score  = chosen.length > 0 ? checkCurrentScore(chosen) : 0;
+    const valid  = chosen.length > 0 ? isSelectionValid(chosen) : false;
+    
     document.getElementById('selection-score').textContent = score;
-    document.getElementById('btn-confirm').disabled = score === 0;
+    document.getElementById('btn-confirm').disabled = !valid;
+
+    // Vizuální zpětná vazba pro nevalidní výběr
+    const span = document.getElementById('selection-score');
+    span.style.color = valid ? '#cf763b' : '#7f3004';
 }
 
 //  Aktualizace stavu hry
 function updateGameState(gameState) {
     document.getElementById('player-score').textContent    = gameState.p1_score   ?? 0;
     document.getElementById('opponent-score').textContent  = gameState.p2_score   ?? 0;
+    document.getElementById('target-score').textContent    = gameState.target_score ?? 3000;
     document.getElementById('turn-score').textContent      = gameState.turn_score  ?? 0;
     document.getElementById('dice-left-count').textContent = gameState.dice_left   ?? 6;
 
@@ -102,7 +127,7 @@ function updateGameState(gameState) {
 
 function showFinished(gameState) {
     const banner = document.querySelector('.finished-banner p');
-    if (gameState.winner_id === null && gameState.p2_score >= 10000) {
+    if (gameState.winner_id === null && gameState.p2_score >= gameState.target_score) {
         banner.textContent = '💀 Prohráli jste! Stařec byl lepší.';
     } else if (gameState.winner_id == document.getElementById('player-id').textContent) {
         banner.textContent = '🏆 Vyhráli jste! Gratulujeme!';
@@ -300,9 +325,36 @@ async function getGameState() {
         const data = await res.json();
         if (data.error) { console.warn('Stav hry:', data.error); return; }
         updateGameState(data);
-    } catch (err) {
+    }
+    catch (err) {
         console.error('Nepodařilo se načíst stav hry:', err);
     }
 }
 
 getGameState();
+
+async function startNewSingleplayerGame(event) {
+    event.preventDefault(); // Prevent default form submission
+
+    // Make sure we get the target score from the UI if it's there, otherwise default
+    const targetScoreElement = document.getElementById('target-score');
+    const targetScore = targetScoreElement ? targetScoreElement.textContent : '3000';
+    
+    try {
+        const res = await fetch('/game/singleplayer/new', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ targetScore })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            window.location.href = '/game/singleplayer'; // Redirect to start a new game
+        } else {
+            alert('Nepodařilo se vytvořit novou hru: ' + (data.error || 'Neznámá chyba'));
+        }
+    } catch (err) {
+        console.error('Error starting new singleplayer game:', err);
+        alert('Chyba spojení se serverem při pokusu o novou hru.');
+    }
+}

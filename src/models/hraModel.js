@@ -20,6 +20,7 @@ class Game {
             last_seed INTEGER DEFAULT 10000,  
             status VARCHAR(20) DEFAULT 'ACTIVE',
             last_roll JSONB DEFAULT '[]',
+            target_score INTEGER DEFAULT 3000,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `;
@@ -32,6 +33,7 @@ class Game {
         `ALTER TABLE games ADD COLUMN IF NOT EXISTS dice_left INTEGER DEFAULT 6`,
         `ALTER TABLE games ADD COLUMN IF NOT EXISTS last_roll JSONB DEFAULT '[]'`,
         'ALTER TABLE games ADD COLUMN IF NOT EXISTS last_seed INTEGER DEFAULT 10000',
+        'ALTER TABLE games ADD COLUMN IF NOT EXISTS target_score INTEGER DEFAULT 3000',
       ];
 
       for (const sql of migrations) {
@@ -43,13 +45,13 @@ class Game {
    * Vytvoří novou hru mezi dvěma hráči
    * První na tahu je player1
    */
-  static async create(player1Id, player2Id) {
+  static async create(player1Id, player2Id, targetScore = 3000) {
       const sql = `
-        INSERT INTO games (player1_id, player2_id, current_turn_id, dice_left)
-        VALUES ($1, $2, $1, 6)
+        INSERT INTO games (player1_id, player2_id, current_turn_id, dice_left, target_score)
+        VALUES ($1, $2, $1, 6, $3)
         RETURNING *;
       `;
-      const { rows } = await db.query(sql, [player1Id, player2Id]);
+      const { rows } = await db.query(sql, [player1Id, player2Id, targetScore]);
       return rows[0];
   }
 
@@ -159,13 +161,13 @@ class Game {
         return rows[0];
     }
     
-    static async createSingleplayerGame(playerId) {
+    static async createSingleplayerGame(playerId, targetScore = 3000) {
         const sql = `
-            INSERT INTO games (player1_id, current_turn_id, game_mode, dice_left)
-            VALUES ($1, $1, 'SINGLEPLAYER', 6)
+            INSERT INTO games (player1_id, current_turn_id, game_mode, dice_left, target_score)
+            VALUES ($1, $1, 'SINGLEPLAYER', 6, $2)
             RETURNING *;
         `;
-        const { rows } = await db.query(sql, [playerId]);
+        const { rows } = await db.query(sql, [playerId, targetScore]);
         return rows[0];
     }
 
