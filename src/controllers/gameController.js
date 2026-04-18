@@ -3,6 +3,7 @@ const roomModel   = require('../models/roomModel');
 const userModel   = require('../models/userModel');
 const scoreEngine = require('../shared/scoreEngine');
 const roller      = require('../shared/diceRoller');
+const db          = require('../db');
 
 const randomIntFromInterval = (min, max) =>
     Math.floor(Math.random() * (max - min + 1) + min);
@@ -124,18 +125,6 @@ exports.postSelectDice = async (req, res) => {
         let updatedGame = await gameModel.updateTurn(
             gameState.id, points, nextDiceCount, []
         );
-
-        if (newTotal >= WIN_SCORE) {
-            await gameModel.bankPoints(gameState.id, gameState.player1_id, gameState.player1_id);
-            const finishedGame = await gameModel.finishGame(gameState.id, gameState.player1_id);
-            
-            // Statistika
-            if (gameState.game_mode === 'SINGLEPLAYER') {
-                await userModel.updateStats(gameState.player1_id, true);
-            }
-            
-            return res.json({ success: true, gameState: finishedGame });
-        }
 
         res.json({ success: true, gameState: updatedGame });
 
@@ -304,22 +293,6 @@ exports.postMultiplayerSelect = async (req, res) => {
 
         const WIN_SCORE = game.target_score;
         let updated = await gameModel.updateTurn(game.id, points, nextDiceCount, []);
-
-        if (newTotal >= WIN_SCORE) {
-            await gameModel.bankPoints(game.id, req.session.user.id, req.session.user.id);
-            const finished = await gameModel.finishGame(game.id, req.session.user.id);
-            
-            // Statistiky a místnost
-            await userModel.updateStats(req.session.user.id, true);
-            const loserId = isPlayer1 ? game.player2_id : game.player1_id;
-            await userModel.updateStats(loserId, false);
-            
-            // TODO: najit roomId a zavolat Room.finish
-            const { rows } = await db.query('SELECT id FROM rooms WHERE game_id = $1', [game.id]);
-            if (rows.length > 0) await roomModel.finish(rows[0].id);
-
-            return res.json({ success: true, gameState: finished });
-        }
 
         res.json({ success: true, gameState: updated });
     } catch (err) {

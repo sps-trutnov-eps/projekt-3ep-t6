@@ -64,10 +64,14 @@ function isSelectionValid(chosenDice) {
         diceLeft[die - 1]++;
     }
 
-    // 1. Postupky (všechny kostky se spotřebují)
-    if (diceLeft.every(c => c >= 1)) return true; // 1-6
-    if (diceLeft.slice(1).every(c => c >= 1) && chosenDice.length === 5) return true; // 2-6
-    if (diceLeft.slice(0, 5).every(c => c >= 1) && chosenDice.length === 5) return true; // 1-5
+    // 1. Postupky (odečteme je, pokud existují)
+    if (diceLeft.every(c => c >= 1)) {
+        for (let i = 0; i < 6; i++) diceLeft[i]--;
+    } else if (diceLeft.slice(1).every(c => c >= 1)) {
+        for (let i = 1; i < 6; i++) diceLeft[i]--;
+    } else if (diceLeft.slice(0, 5).every(c => c >= 1)) {
+        for (let i = 0; i < 5; i++) diceLeft[i]--;
+    }
 
     // 2. Trojice a více (tyto kostky skórují)
     for (let i = 0; i < 6; i++) {

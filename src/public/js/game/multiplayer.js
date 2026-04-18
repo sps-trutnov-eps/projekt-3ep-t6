@@ -73,6 +73,7 @@ function renderState(g) {
 
     // Výsledek hry
     if (g.status === 'FINISHED') {
+        stopPolling();
         const won = g.winner_id === MY_ID;
         document.getElementById('finished-text').innerHTML = won
             ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#b4901e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -88,11 +89,8 @@ function renderState(g) {
                 <line x1="9" y1="9" x2="15" y2="15"/>
             </svg>
             Prohráli jste.`;
-
         document.getElementById('game-finished').style.display = 'block';
-        document.getElementById('action-area').style.display   = 'none';
-        document.getElementById('dice-area').innerHTML         = '';
-        stopPolling();
+        document.querySelector('.game-layout').style.display = 'none';
         return;
     }
 
@@ -278,9 +276,14 @@ function isSelectionValid(chosenDice) {
     let diceLeft = [0, 0, 0, 0, 0, 0];
     for (let die of chosenDice) diceLeft[die - 1]++;
 
-    if (diceLeft.every(c => c >= 1)) return true;
-    if (diceLeft.slice(1).every(c => c >= 1) && chosenDice.length === 5) return true;
-    if (diceLeft.slice(0, 5).every(c => c >= 1) && chosenDice.length === 5) return true;
+    // 1. Postupky (odečteme je, pokud existují)
+    if (diceLeft.every(c => c >= 1)) {
+        for (let i = 0; i < 6; i++) diceLeft[i]--;
+    } else if (diceLeft.slice(1).every(c => c >= 1)) {
+        for (let i = 1; i < 6; i++) diceLeft[i]--;
+    } else if (diceLeft.slice(0, 5).every(c => c >= 1)) {
+        for (let i = 0; i < 5; i++) diceLeft[i]--;
+    }
 
     for (let i = 0; i < 6; i++) {
         if (diceLeft[i] >= 3) diceLeft[i] = 0;
@@ -395,20 +398,6 @@ function enterSelectPhase() {
     document.getElementById('btn-confirm').style.display = 'inline-block';
     document.getElementById('btn-reroll').style.display  = 'none';
     document.getElementById('btn-bank').style.display    = 'none';
-    document.getElementById('btn-confirm').disabled      = true;
-    document.getElementById('selection-score-row').style.display = 'flex';
-    hideBust();
-}
-
-function enterPostConfirmPhase(diceLeft) {
-    document.getElementById('btn-roll').style.display    = 'none';
-    document.getElementById('btn-confirm').style.display = 'none';
-    document.getElementById('btn-reroll').style.display  = 'inline-block';
-    document.getElementById('btn-bank').style.display    = 'inline-block';
-
-    const d = diceLeft;
-    document.getElementById('btn-reroll').textContent =
-        `Hodit znovu (${d} ${d === 1 ? 'kostka' : d < 5 ? 'kostky' : 'kostek'})`;
 }
 
 function setButtonsWaiting() {
