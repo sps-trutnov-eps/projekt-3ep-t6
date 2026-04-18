@@ -16,7 +16,7 @@ function startPolling() {
     if (pollInterval) return;
     pollInterval = setInterval(async () => {
         await fetchState();
-    }, 2500);
+    }, 1000);
 }
 
 function stopPolling() {

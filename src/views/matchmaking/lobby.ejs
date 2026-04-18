@@ -263,7 +263,7 @@
     // ── polling stavu místnosti (pro tvůrce) ───────────────
     function startPolling() {
         stopPolling();
-        _pollInterval = setInterval(pollRoomStatus, 2500);
+        _pollInterval = setInterval(pollRoomStatus, 1000);
     }
 
     function stopPolling() {
