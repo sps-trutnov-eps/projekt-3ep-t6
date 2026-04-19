@@ -274,9 +274,13 @@ function isSelectionValid(chosenDice) {
 }
 
 // akce 
-async function rollDice() {
+async function rollDice(useWild = false) {
     try {
-        const res  = await fetch(`/game/multiplayer/${GAME_ID}/roll`, { method: 'POST' });
+        const res  = await fetch(`/game/multiplayer/${GAME_ID}/roll`, { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ useWild })
+        });
         const data = await res.json();
         if (!data.success) return alert(data.error);
 
@@ -362,23 +366,12 @@ async function showButtonsBeforeRoll() {
 
     // Wild dice logic
     const btnWild = document.getElementById('btn-wild');
-    if (btnWild) {
+    if (btnWild && gameState) {
         const isPlayer1 = gameState.player1_id === MY_ID;
         const wildUsed = isPlayer1 ? gameState.p1_wild_used : gameState.p2_wild_used;
         
-        if (!wildUsed) {
-            try {
-                const res = await fetch('/matchmaking/friends'); // Hack: getting user info
-                const userData = await fetch('/auth/me').then(r => r.json()); // Potřebujeme me endpoint nebo poslat s game state
-                
-                // Fetch user streak from server or include in game state
-                // Pro jednoduchost předpokládáme že controller posílá streak v game state (upravíme)
-                if (gameState.user_streak >= 3) {
-                    btnWild.style.display = 'block';
-                } else {
-                    btnWild.style.display = 'none';
-                }
-            } catch(e) { btnWild.style.display = 'none'; }
+        if (!wildUsed && gameState.user_streak >= 3) {
+            btnWild.style.display = 'block';
         } else {
             btnWild.style.display = 'none';
         }

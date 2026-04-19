@@ -106,16 +106,16 @@ class Game {
      * - Resetuje se počet kostek na 6
      */
     static async bust(gameId, nextPlayerId, rollValues) {
-    const sql = `
-        UPDATE games
-        SET turn_score = 0,
-            dice_left = 6,
-            current_turn_id = $2,
-            last_roll = '[]'
-        WHERE id = $1
-        RETURNING *;
+        const sql = `
+            UPDATE games
+            SET turn_score = 0,
+                dice_left = 6,
+                current_turn_id = $2,
+                last_roll = $3
+            WHERE id = $1
+            RETURNING *;
         `;
-        const { rows } = await db.query(sql, [gameId, nextPlayerId]);
+        const { rows } = await db.query(sql, [gameId, nextPlayerId, JSON.stringify(rollValues)]);
         return rows[0];
     }
 
