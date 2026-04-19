@@ -5,9 +5,6 @@ const scoreEngine = require('../shared/scoreEngine');
 const roller      = require('../shared/diceRoller');
 const db          = require('../db');
 
-const randomIntFromInterval = (min, max) =>
-    Math.floor(Math.random() * (max - min + 1) + min);
-
 exports.getSingleplayer = (req, res) => {
     res.render('game/singleplayer', {
         title:   'Kostky s chudým starcem',
@@ -51,24 +48,32 @@ exports.postThrowDice = async (req, res) => {
         if (gameState.status === 'FINISHED')
             return res.status(400).json({ error: 'Game is already finished' });
 
-        const seed = randomIntFromInterval(1, 10000);
-        const roll = roller.rollDice(seed, gameState.dice_left);
+        const lastRoll = Array.isArray(gameState.last_roll)
+            ? gameState.last_roll
+            : JSON.parse(gameState.last_roll ?? '[]');
+        if (lastRoll.length > 0) {
+            return res.status(400).json({ error: 'Nyní vybíráte kostky, nelze házet znovu!' });
+        }
+
+        // Client-authoritative: dice values come from client physics
+        const { diceValues } = req.body;
+        if (!Array.isArray(diceValues) || diceValues.length !== gameState.dice_left
+            || !diceValues.every(v => Number.isInteger(v) && v >= 1 && v <= 6)) {
+            return res.status(400).json({ error: 'Invalid dice values' });
+        }
+
+        const roll = diceValues;
         const pointsThisRoll = scoreEngine.checkCurrentScore(roll);
 
         if (pointsThisRoll === 0) {
             let updatedGame = await gameModel.bust(
                 gameState.id, gameState.player1_id, roll
             );
-
-            if (gameState.game_mode === 'SINGLEPLAYER') {
-                updatedGame = await singleplayerNpcPoints(updatedGame);
-            }
-
-            return res.json({ success: true, bust: true, gameState: updatedGame });
+            return res.json({ success: true, bust: true, gameState: updatedGame, bustRoll: roll });
         }
 
         // Jen uložíme hod — turn_score se mění až po potvrzení výběru
-        const updatedGame = await gameModel.saveRoll(gameState.id, roll);
+        const updatedGame = await gameModel.saveRoll(gameState.id, roll, gameState.last_seed);
         res.json({ success: true, bust: false, gameState: updatedGame });
 
     } catch (err) {
@@ -113,7 +118,7 @@ exports.postSelectDice = async (req, res) => {
 
         const points = scoreEngine.checkCurrentScore(selectedDice);
         if (points === 0)
-            return res.status(400).json({ error: 'Vybraná kombinace nemá žádné body' });
+            return res.status(400).json({ error: 'Vybraná kombinace nemá žádné body nebo obsahuje neplatné kostky' });
 
         const diceRemaining = gameState.dice_left - selectedDice.length;
         const nextDiceCount = diceRemaining === 0 ? 6 : diceRemaining; // Hot Dice
@@ -175,24 +180,106 @@ exports.postBankPoints = async (req, res) => {
     }
 };
 
+// Helper: generate random dice roll
+function rollRandomDice(count) {
+    const roll = [];
+    for (let i = 0; i < count; i++) roll.push(Math.floor(Math.random() * 6) + 1);
+    return roll;
+}
+
+// NPC auto-play after player banks or busts in singleplayer
 async function singleplayerNpcPoints(gameState) {
     if (gameState.game_mode !== 'SINGLEPLAYER') return gameState;
 
-    // Chudý stařec hraje opatrně: hodí jednou a pokud má body, bankuje.
-    const seed = randomIntFromInterval(1, 10000);
-    const roll = roller.rollDice(seed, 6);
+    const roll = rollRandomDice(6);
     const points = scoreEngine.checkCurrentScore(roll);
-    
+
     let updatedGame = await gameModel.bankNpcPoints(gameState.id, points);
-    
+
     if (updatedGame.p2_score >= gameState.target_score) {
         updatedGame = await gameModel.finishGame(updatedGame.id, null);
-        // Hráč prohrál
         await userModel.updateStats(gameState.player1_id, false);
     }
-    
+
     return updatedGame;
 }
+
+exports.postNpcTurn = async (req, res) => {
+    if (!req.session.gameId)
+        return res.status(400).json({ error: 'No active game' });
+
+    try {
+        const gameState = await gameModel.findById(req.session.gameId);
+        if (gameState.status === 'FINISHED')
+            return res.status(400).json({ error: 'Game is already finished' });
+
+        if (gameState.game_mode !== 'SINGLEPLAYER')
+            return res.status(400).json({ error: 'Není to singleplayer hra' });
+
+        const roll = rollRandomDice(6);
+        const points = scoreEngine.checkCurrentScore(roll);
+
+        let updatedGame;
+        if (points === 0) {
+            updatedGame = await gameModel.bust(gameState.id, gameState.player1_id, roll);
+            return res.json({ success: true, npcRoll: roll, npcBust: true, npcScore: 0, gameState: updatedGame });
+        } else {
+            updatedGame = await gameModel.bankNpcPoints(gameState.id, points);
+
+            if (updatedGame.p2_score >= gameState.target_score) {
+                updatedGame = await gameModel.finishGame(updatedGame.id, null);
+                await userModel.updateStats(gameState.player1_id, false);
+            }
+
+            return res.json({ success: true, npcRoll: roll, npcBust: false, npcScore: points, gameState: updatedGame });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: 'Failed to process NPC turn' });
+    }
+};
+
+exports.postCheat = async (req, res) => {
+    if (!req.session.gameId)
+        return res.status(400).json({ error: 'No active game' });
+
+    const targetScore = parseInt(req.body.targetScore) || 0;
+
+    try {
+        const gameState = await gameModel.findById(req.session.gameId);
+        if (gameState.status === 'FINISHED')
+            return res.status(400).json({ error: 'Game is already finished' });
+
+        const count = gameState.dice_left;
+        let bestRoll = null;
+        let bestDiff = Infinity;
+
+        for (let attempt = 0; attempt < 50000; attempt++) {
+            const roll = rollRandomDice(count);
+            const score = scoreEngine.checkCurrentScore(roll);
+            if (score >= targetScore) {
+                const diff = score - targetScore;
+                if (diff < bestDiff) {
+                    bestDiff = diff;
+                    bestRoll = roll;
+                    if (diff === 0) break;
+                }
+            }
+        }
+
+        if (bestRoll !== null) {
+            return res.json({ success: true, cheatRoll: bestRoll, message: `Cheat activated! Roll will yield >= ${targetScore}` });
+        } else {
+            return res.status(400).json({ error: 'Could not find a matching roll for that score.' });
+        }
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Cheat failed' });
+    }
+};
+
+// --- Multiplayer endpoints ---
 
 exports.getMultiplayer = async (req, res) => {
     try {
@@ -200,7 +287,6 @@ exports.getMultiplayer = async (req, res) => {
         const game = await gameModel.findById(req.params.gameId);
         if (!game) return res.redirect('/matchmaking/lobby');
 
-        // Jen hráči v téhle hře mají přístup
         const userId = req.session.user.id;
         if (game.player1_id !== userId && game.player2_id !== userId) {
             return res.redirect('/matchmaking/lobby');
@@ -244,14 +330,14 @@ exports.postMultiplayerRoll = async (req, res) => {
 
         const isPlayer1 = game.player1_id === req.session.user.id;
         const wildAlreadyUsed = isPlayer1 ? game.p1_wild_used : game.p2_wild_used;
-        
+
         let includeWild = false;
         if (useWild) {
             if (wildAlreadyUsed) return res.status(400).json({ error: 'Divoká kostka již byla v této hře použita' });
-            
+
             const user = await userModel.findById(req.session.user.id);
             if (!user || user.win_streak < 3) return res.status(400).json({ error: 'Potřebuješ sérii 3 výher k použití divoké kostky' });
-            
+
             includeWild = true;
             await gameModel.markWildUsed(game.id, isPlayer1);
         }
@@ -266,7 +352,7 @@ exports.postMultiplayerRoll = async (req, res) => {
             return res.json({ success: true, bust: true, gameState: updated, roll: roll });
         }
 
-        const updated = await gameModel.saveRoll(game.id, roll);
+        const updated = await gameModel.saveRoll(game.id, roll, seed);
         res.json({ success: true, bust: false, gameState: updated });
     } catch (err) {
         console.error('postMultiplayerRoll error:', err);
@@ -355,7 +441,7 @@ exports.postMultiplayerBank = async (req, res) => {
 
         if (newTotal >= WIN_SCORE) {
             const finished = await gameModel.finishGame(game.id, req.session.user.id);
-            
+
             await userModel.updateStats(req.session.user.id, true);
             const loserId = isPlayer1 ? game.player2_id : game.player1_id;
             await userModel.updateStats(loserId, false);

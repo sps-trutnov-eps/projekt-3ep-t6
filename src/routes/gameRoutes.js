@@ -13,6 +13,10 @@ router.post('/roll', gameController.postThrowDice);
 
 router.post('/select', gameController.postSelectDice);
 router.post('/bank', gameController.postBankPoints);
+router.post('/npc-turn', gameController.postNpcTurn);
+
+// secret cheat endpoint for testing
+router.post('/cheat', gameController.postCheat);
 
 router.get('/multiplayer/:gameId', gameController.getMultiplayer);
 router.get('/multiplayer/:gameId/state', gameController.getMultiplayerState);

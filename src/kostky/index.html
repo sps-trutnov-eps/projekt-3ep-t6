@@ -1,29 +1,326 @@
-<!--
-  index.html
-  ----------
-  Simple wrapper to host the WebGL canvas and load the
-  JavaScript modules. No server-side logic; can be opened
-  directly in a browser or served by any static HTTP server.
-
-  It pulls in the glMatrix library for matrix math and then
-  starts `script.js` as a module. The `<canvas>` element with
-  id `cnv` is where the 3D cube is rendered.
--->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Render</title>
+    <title>Farkle</title>
     <script
       src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"
       integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
       crossorigin="anonymous"
       defer></script>
     <script src="script.js" type="module"></script>
-</head>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        background: #1a1a1a;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #eee;
+        overflow: hidden;
+      }
 
+      #game-wrapper {
+        display: flex;
+        flex-direction: column;
+        width: 90vw;
+        height: 96vh;
+        max-width: 1400px;
+        gap: 8px;
+      }
+
+      /* --- Top bar: scores --- */
+      #score-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #222;
+        border-radius: 8px;
+        padding: 10px 24px;
+        flex-shrink: 0;
+      }
+      .score-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .score-group .label {
+        font-size: 13px;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .score-group .value {
+        font-size: 24px;
+        font-weight: bold;
+      }
+      #player-score-group .value { color: #fff; }
+      #ai-score-group .value { color: #f77; }
+      #turn-score-group .value { color: #f0c040; }
+      #turn-indicator {
+        font-size: 14px;
+        font-weight: 600;
+        color: #aaa;
+        padding: 4px 12px;
+        border-radius: 4px;
+        background: #2a2a2a;
+      }
+      #turn-indicator.human { color: #4af; }
+      #turn-indicator.ai { color: #f77; }
+
+      /* --- Canvas --- */
+      #canvas-area {
+        flex: 1;
+        min-height: 0;
+        position: relative;
+      }
+      #cnv {
+        width: 100%;
+        height: 100%;
+        display: block;
+        border-radius: 8px;
+        background: #000;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+      }
+
+      /* --- Bottom bar: status + dice + actions --- */
+      #bottom-bar {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        background: #222;
+        border-radius: 8px;
+        padding: 10px 24px;
+        flex-shrink: 0;
+      }
+
+      #status-msg {
+        font-size: 16px;
+        font-weight: 600;
+        min-height: 24px;
+        text-align: center;
+      }
+      #status-msg.farkle { color: #ff4444; }
+      #status-msg.win { color: #44ff44; font-size: 20px; }
+      #status-msg.lose { color: #ff4444; font-size: 20px; }
+
+      #controls-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      /* --- Floating dice labels (3D projected) --- */
+      #dice-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      .dice-label {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        pointer-events: auto;
+        cursor: pointer;
+        user-select: none;
+        width: 48px;
+        height: 48px;
+        display: none;
+        border-radius: 50%;
+      }
+      .dice-label.visible { display: block; }
+      .dice-label .dice-value {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 22px;
+        font-weight: bold;
+        color: #fff;
+        text-shadow: 0 0 6px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7);
+        padding: 2px 10px;
+        border-radius: 4px;
+        white-space: nowrap;
+        opacity: 0;
+        transition: opacity 0.15s;
+        pointer-events: none;
+      }
+      .dice-label:hover .dice-value,
+      .dice-label.selected .dice-value,
+      .dice-label.kept .dice-value {
+        opacity: 1;
+      }
+      .dice-label:hover .dice-value {
+        color: #f0c040;
+        text-shadow: 0 0 12px rgba(240,192,64,0.6), 0 0 4px rgba(0,0,0,0.9);
+      }
+      .dice-label.selected .dice-value {
+        color: #f0c040;
+        background: rgba(240,192,64,0.15);
+        text-shadow: 0 0 16px rgba(240,192,64,0.8);
+      }
+      .dice-label.kept .dice-value {
+        color: #6c6;
+        text-shadow: 0 0 12px rgba(68,170,68,0.6);
+      }
+      .dice-label.kept { cursor: default; }
+
+      #selection-score {
+        font-size: 13px;
+        color: #f0c040;
+        min-width: 80px;
+        text-align: center;
+      }
+
+      #actions {
+        display: flex;
+        gap: 8px;
+      }
+      #actions button {
+        padding: 10px 28px;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      #btn-roll { background: #2a7fff; color: #fff; }
+      #btn-roll:hover:not(:disabled) { background: #1a6fef; }
+      #btn-confirm { background: #f0c040; color: #222; }
+      #btn-confirm:hover:not(:disabled) { background: #e0b030; }
+      #btn-bank { background: #4a4; color: #fff; }
+      #btn-bank:hover:not(:disabled) { background: #393; }
+      #actions button:disabled { opacity: 0.3; cursor: default; }
+
+      /* --- Rules button + modal --- */
+      #btn-rules {
+        padding: 6px 14px;
+        border: 1px solid #444;
+        border-radius: 6px;
+        background: #2a2a2a;
+        color: #aaa;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      #btn-rules:hover { border-color: #888; color: #eee; }
+      #rules-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 100;
+        justify-content: center;
+        align-items: center;
+      }
+      #rules-modal.open { display: flex; }
+      #rules-content {
+        background: #222;
+        border-radius: 12px;
+        padding: 28px 32px;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow-y: auto;
+        color: #ddd;
+        line-height: 1.6;
+        font-size: 14px;
+      }
+      #rules-content h2 { margin-bottom: 12px; color: #fff; }
+      #rules-content h3 { margin-top: 14px; margin-bottom: 4px; color: #f0c040; font-size: 15px; }
+      #rules-content ul { padding-left: 20px; }
+      #rules-close {
+        margin-top: 16px;
+        padding: 8px 24px;
+        border: none;
+        border-radius: 6px;
+        background: #2a7fff;
+        color: #fff;
+        font-size: 14px;
+        cursor: pointer;
+      }
+    </style>
+</head>
 <body>
-    <canvas id="cnv" width="640" height="480"></canvas>    
+  <div id="game-wrapper">
+    <!-- Top: scores -->
+    <div id="score-bar">
+      <div class="score-group" id="player-score-group">
+        <span class="label">You</span>
+        <span class="value" id="player-score">0</span>
+      </div>
+      <div class="score-group" id="turn-score-group">
+        <span class="label">Turn</span>
+        <span class="value" id="turn-score">0</span>
+      </div>
+      <div id="turn-indicator" class="human">Your turn</div>
+      <button id="btn-rules" title="Rules">Rules</button>
+      <div class="score-group" id="ai-score-group">
+        <span class="label">AI</span>
+        <span class="value" id="ai-score">0</span>
+      </div>
+    </div>
+
+    <!-- Middle: canvas + floating dice labels -->
+    <div id="canvas-area">
+      <canvas id="cnv" width="1280" height="960"></canvas>
+      <div id="dice-overlay">
+        <div class="dice-label" data-index="0"><span class="dice-value"></span></div>
+        <div class="dice-label" data-index="1"><span class="dice-value"></span></div>
+        <div class="dice-label" data-index="2"><span class="dice-value"></span></div>
+        <div class="dice-label" data-index="3"><span class="dice-value"></span></div>
+        <div class="dice-label" data-index="4"><span class="dice-value"></span></div>
+        <div class="dice-label" data-index="5"><span class="dice-value"></span></div>
+      </div>
+    </div>
+
+    <!-- Bottom: status + actions -->
+    <div id="bottom-bar">
+      <div id="status-msg">Press Roll to start!</div>
+      <div id="controls-row">
+        <div id="selection-score"></div>
+        <div id="actions">
+          <button id="btn-roll">Roll</button>
+          <button id="btn-confirm" disabled>Confirm</button>
+          <button id="btn-bank" disabled>Bank</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="rules-modal">
+    <div id="rules-content">
+      <h2>Farkle Rules</h2>
+      <p>Roll 6 dice. Set aside scoring dice, then roll again or bank your points.</p>
+
+      <h3>Scoring</h3>
+      <ul>
+        <li>Single 1 = 100 pts</li>
+        <li>Single 5 = 50 pts</li>
+        <li>Three of a kind = face x 100 (three 1s = 1000)</li>
+        <li>Four of a kind = face x 200</li>
+        <li>Five of a kind = face x 400</li>
+        <li>Six of a kind = face x 800</li>
+        <li>Straight (1-2-3-4-5-6) = 1500</li>
+        <li>Three pairs = 750</li>
+      </ul>
+
+      <h3>Gameplay</h3>
+      <ul>
+        <li>You must keep at least one scoring die each roll</li>
+        <li><b>Bank</b> to save your turn points to your total</li>
+        <li><b>Roll again</b> with remaining dice to push for more</li>
+        <li><b>Farkle</b> — if no dice score, you lose all turn points</li>
+        <li><b>Hot Dice</b> — if all 6 dice score, roll all 6 again</li>
+        <li>First to <b>10,000</b> points wins!</li>
+      </ul>
+
+      <button id="rules-close">Got it</button>
+    </div>
+  </div>
 </body>
 </html>

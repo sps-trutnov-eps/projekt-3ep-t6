@@ -1,63 +1,239 @@
 <%- include('../partials/header') %>
 
-<span style="display:none;" id="player-id"><%= user.id %></span>
+<span style="display:none;" id="player-id"><%= user ? user.id : '' %></span>
+<span id="dice-left-count" style="display:none;">6</span>
+<script
+  src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"
+  integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
+  crossorigin="anonymous"
+  defer></script>
+<script src="/kostky/renderer.js" type="module"></script>
 <script src="/js/game/singleplayer.js" defer></script>
 
-<div class="container">
-    <div class="game-wrapper">
+<style>
+  .game-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  /* Header: title + opponent + goal */
+  .game-header {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  .game-header h1 { margin-bottom: 0.25rem; }
+  .game-header .game-meta {
+    font-size: 0.95rem;
+    color: #2c3e50;
+  }
+
+  /* Middle row: canvas centered, side panel offset to the right */
+  .game-middle {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* Anchor for canvas + side panel positioning */
+  .canvas-anchor {
+    position: relative;
+    width: 100%;
+    max-width: 700px;
+  }
+
+  /* Canvas wrapper */
+  #dice-3d-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    min-height: 350px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+  }
+  #cnv {
+    width: 100%; height: 100%; display: block;
+    image-rendering: pixelated; image-rendering: crisp-edges;
+  }
+
+  /* Score overlay inside canvas */
+  #canvas-score-overlay {
+    position: absolute;
+    top: 12px; left: 14px;
+    color: #fff;
+    font-size: 1.3rem;
+    font-weight: bold;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.6);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* Dice label overlay */
+  #dice-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none; overflow: hidden;
+  }
+  .dice-label {
+    position: absolute; transform: translate(-50%, -50%);
+    pointer-events: auto; cursor: pointer; user-select: none;
+    width: 48px; height: 48px; display: none; border-radius: 50%;
+  }
+  .dice-label.visible { display: block; }
+  .dice-label .dice-value {
+    position: absolute; bottom: 100%; left: 50%;
+    transform: translateX(-50%);
+    font-size: 22px; font-weight: bold; color: #fff;
+    text-shadow: 0 0 6px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7);
+    padding: 2px 10px; border-radius: 4px; white-space: nowrap;
+    opacity: 0; transition: opacity 0.15s; pointer-events: none;
+  }
+  .dice-label:hover .dice-value,
+  .dice-label.selected .dice-value,
+  .dice-label.kept .dice-value { opacity: 1; }
+  .dice-label:hover .dice-value {
+    color: #f0c040;
+    text-shadow: 0 0 12px rgba(240,192,64,0.6), 0 0 4px rgba(0,0,0,0.9);
+  }
+  .dice-label.selected .dice-value {
+    color: #f0c040; background: rgba(240,192,64,0.15);
+    text-shadow: 0 0 16px rgba(240,192,64,0.8);
+  }
+  .dice-label.kept .dice-value {
+    color: #6c6; text-shadow: 0 0 12px rgba(68,170,68,0.6);
+  }
+  .dice-label.kept { cursor: default; }
+
+  /* Side panel: turn scores, anchored to right edge of canvas */
+  .game-side-panel {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    margin-left: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 150px;
+    padding: 1rem;
+    border-radius: 0;
+    border: 3px solid transparent;
+    border-image: linear-gradient(135deg, #7f3004, #cf763b, #b4901e, #cf763b, #7f3004) 1;
+    white-space: nowrap;
+  }
+  .game-side-panel .score-label {
+    font-size: 0.85rem;
+    color: #2c3e50;
+  }
+  .game-side-panel .score-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #cf763b;
+  }
+  .game-side-panel .bust-message {
+    color: #7f3004;
+    font-weight: bold;
+    font-size: 1rem;
+    padding: 0.5rem 0;
+    animation: shake 0.4s ease;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25%       { transform: translateX(-6px); }
+    75%       { transform: translateX(6px); }
+  }
+
+  /* Buttons centered below canvas */
+  .game-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+
+  /* Finished banner */
+  #game-finished {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  @media (max-width: 700px) {
+    .game-side-panel {
+      position: static;
+      min-width: unset;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .game-middle { flex-direction: column; align-items: center; }
+  }
+</style>
+
+<div class="game-page">
+
+    <div class="game-header">
         <h1><%= message %></h1>
-
-        <div id="game-finished" style="display: none;">
-            <div class="finished-banner">
-                <p>🏆 Vyhráli jste! Gratulujeme!</p>
-            </div>
-            <form action="#" method="POST" style="margin-top: 1rem;" onsubmit="startNewSingleplayerGame(event)">
-                <button type="submit" class="btn-primary">Začít novou hru</button>
-            </form>
-        </div>
-
-        <div class="game-layout">
-
-            <!-- Levý sloupec: info + akce -->
-            <div class="game-left">
-                <div class="game-state">
-                    <p>Hrajete proti: <span id="opponent-name">Chudý starec</span></p>
-                    <p>Vaše celkové skóre: <span id="player-score">0</span></p>
-                    <p>Skóre soupeře: <span id="opponent-score">0</span></p>
-                    <p>Cíl: <span id="target-score">3000</span></p>
-                </div>
-
-                <div class="game-board">
-                    <p>Body na stole: <span id="turn-score">0</span></p>
-
-                    <div id="selection-score-row" class="score-row" style="display:none;">
-                        <span>Body za výběr:</span>
-                        <span id="selection-score" class="score-highlight">0</span>
-                    </div>
-
-                    <div id="bust-msg" class="bust-message" style="display:none;">
-                        Farkle! Přišel jsi o body v tomto kole.
-                    </div>
-                </div>
-
-                <div id="action-area" class="action-area">
-                    <button id="btn-roll"    class="btn-primary"   onclick="rollDice()">Hodit kostkami</button>
-                    <button id="btn-confirm" class="btn-primary"   onclick="confirmSelection()" style="display:none;" disabled>Potvrdit výběr</button>
-                    <button id="btn-reroll"  class="btn-secondary" onclick="rerollDice()"       style="display:none;">Hodit znovu</button>
-                    <button id="btn-bank"    class="btn-secondary" onclick="bankPoints()"        style="display:none;">Bankovat</button>
-                </div>
-            </div>
-
-            <!-- Pravý sloupec: kostky -->
-            <div class="game-right">
-                <div class="game-board">
-                    <p>Zbývající kostky: <span id="dice-left-count">6</span></p>
-                    <div id="dice-area" class="dice-area"></div>
-                </div>
-            </div>
-
+        <div class="game-meta">
+            Proti: <span id="opponent-name">Chudému starci</span>
+            &middot; Cíl: <span id="target-score">3000</span>
         </div>
     </div>
+
+    <div id="game-finished" style="display: none;">
+        <div class="finished-banner">
+            <p>Vyhráli jste! Gratulujeme!</p>
+        </div>
+        <form action="#" method="POST" style="margin-top: 1rem;" onsubmit="startNewSingleplayerGame(event)">
+            <button type="submit" class="btn-primary">Začít novou hru</button>
+        </form>
+    </div>
+
+    <div class="game-middle">
+        <div class="canvas-anchor">
+            <div id="dice-3d-wrap">
+                <div id="canvas-score-overlay"><span id="player-score">0</span></div>
+                <canvas id="cnv" width="640" height="480"></canvas>
+                <div id="dice-overlay">
+                    <div class="dice-label" data-index="0"><span class="dice-value"></span></div>
+                    <div class="dice-label" data-index="1"><span class="dice-value"></span></div>
+                    <div class="dice-label" data-index="2"><span class="dice-value"></span></div>
+                    <div class="dice-label" data-index="3"><span class="dice-value"></span></div>
+                    <div class="dice-label" data-index="4"><span class="dice-value"></span></div>
+                    <div class="dice-label" data-index="5"><span class="dice-value"></span></div>
+                </div>
+            </div>
+            <div class="game-side-panel">
+                <div>
+                    <div class="score-label">Skore protivnika</div>
+                    <div class="score-value" id="opponent-score">0</div>
+                </div>
+                <div>
+                    <div class="score-label">Body na stole</div>
+                    <div class="score-value" id="turn-score">0</div>
+                </div>
+                <div id="selection-score-row" style="display:none;">
+                    <div class="score-label">Body za vyber</div>
+                    <div class="score-value" id="selection-score">0</div>
+                </div>
+                <div id="bust-msg" class="bust-message" style="display:none;">
+                    Farkle! Prisel jsi o body v tomto kole.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="action-area" class="game-actions">
+        <button id="btn-roll"    class="btn-primary"   onclick="rollDice()">Hodit kostkami</button>
+        <button id="btn-confirm" class="btn-primary"   onclick="confirmSelection()" style="display:none;" disabled>Potvrdit vyber</button>
+        <button id="btn-reroll"  class="btn-secondary" onclick="rerollDice()"       style="display:none;">Hodit znovu</button>
+        <button id="btn-bank"    class="btn-secondary" onclick="bankPoints()"        style="display:none;">Bankovat</button>
+    </div>
+
 </div>
 
 <%- include('../partials/footer') %>

@@ -1,170 +1,100 @@
 // draw.js
 // --------
 // Contains the `drawScene` function which sets up the camera
-// projection, model‑view transforms (including rotation), binds
-// attributes/uniforms and issues the draw call for the cube.
-// Also provides helpers for enabling the vertex attributes for
-// position, color and texture coordinates.
+// projection, model-view transforms (including rotation), binds
+// attributes/uniforms and issues the draw call.
 
 const { mat4 } = window;
 
-function drawScene(gl, programInfo, buffers, texture, cubeRotation) {
-  gl.clearColor(0.0, 0.0, 0.0, 1.0); // Clear to black, fully opaque
-  gl.clearDepth(1.0); // Clear everything
-  gl.enable(gl.DEPTH_TEST); // Enable depth testing
-  gl.depthFunc(gl.LEQUAL); // Near things obscure far things
-
-  // Clear the canvas before we start drawing on it.
-
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-  // Create a perspective matrix, a special matrix that is
-  // used to simulate the distortion of perspective in a camera.
-  // Our field of view is 45 degrees, with a width/height
-  // ratio that matches the display size of the canvas
-  // and we only want to see objects between 0.1 units
-  // and 100 units away from the camera.
-
-  const fieldOfView = (45 * Math.PI) / 180; // in radians
+function drawScene(gl, programInfo, buffers, texture, rotation, pos) {
+  const fieldOfView = (45 * Math.PI) / 180;
   const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
   const zNear = 0.1;
   const zFar = 100.0;
   const projectionMatrix = mat4.create();
-
-  // note: glMatrix always has the first argument
-  // as the destination to receive the result.
   mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
 
-  // Set the drawing position to the "identity" point, which is
-  // the center of the scene.
-  const modelViewMatrix = mat4.create();
-
-  // Now move the drawing position a bit to where we want to
-  // start drawing the square.
-  mat4.translate(
-    modelViewMatrix, // destination matrix
-    modelViewMatrix, // matrix to translate
-    [-0.0, 0.0, -6.0], // amount to translate
+  // Camera: player's POV, looking across the table
+  const viewMatrix = mat4.create();
+  mat4.lookAt(viewMatrix,
+    [0, 12, 4],     // eye — high POV
+    [0, -3, -13],   // center — middle of both frames
+    [0, 1, 0],
   );
 
-  mat4.rotate(
-  modelViewMatrix, // destination matrix
-  modelViewMatrix, // matrix to rotate
-  cubeRotation, // amount to rotate in radians
-  [0, 0, 1],
-  ); // axis to rotate around (Z)
-  mat4.rotate(
-  modelViewMatrix, // destination matrix
-  modelViewMatrix, // matrix to rotate
-  cubeRotation * 0.7, // amount to rotate in radians
-  [0, 1, 0],
-  ); // axis to rotate around (Y)
-  mat4.rotate(
-  modelViewMatrix, // destination matrix
-  modelViewMatrix, // matrix to rotate
-  cubeRotation * 0.3, // amount to rotate in radians
-  [1, 0, 0],
-  ); // axis to rotate around (X)
+  // Model matrix
+  const modelMatrix = mat4.create();
+  mat4.translate(modelMatrix, modelMatrix, [pos[0], pos[1], pos[2]]);
 
-  // Tell WebGL how to pull out the positions from the position
-  // buffer into the vertexPosition attribute.
+  // Combine: view * model
+  const modelViewMatrix = mat4.create();
+  mat4.multiply(modelViewMatrix, viewMatrix, modelMatrix);
+
+  // Rotation: quaternion [s, vx, vy, vz] (length 4) or Euler angles [rx, ry, rz] (length 3)
+  if (Array.isArray(rotation) && rotation.length === 4) {
+    const [s, vx, vy, vz] = rotation;
+    const rotMat = mat4.create();
+    rotMat[0]  = 1 - 2*vy*vy - 2*vz*vz;
+    rotMat[1]  = 2*vx*vy + 2*s*vz;
+    rotMat[2]  = 2*vx*vz - 2*s*vy;
+    rotMat[3]  = 0;
+    rotMat[4]  = 2*vx*vy - 2*s*vz;
+    rotMat[5]  = 1 - 2*vx*vx - 2*vz*vz;
+    rotMat[6]  = 2*vy*vz + 2*s*vx;
+    rotMat[7]  = 0;
+    rotMat[8]  = 2*vx*vz + 2*s*vy;
+    rotMat[9]  = 2*vy*vz - 2*s*vx;
+    rotMat[10] = 1 - 2*vx*vx - 2*vy*vy;
+    rotMat[11] = 0;
+    mat4.multiply(modelViewMatrix, modelViewMatrix, rotMat);
+  } else {
+    const rot = Array.isArray(rotation) ? rotation : [rotation * 0.3, rotation * 0.7, rotation];
+    mat4.rotate(modelViewMatrix, modelViewMatrix, rot[0], [1, 0, 0]);
+    mat4.rotate(modelViewMatrix, modelViewMatrix, rot[1], [0, 1, 0]);
+    mat4.rotate(modelViewMatrix, modelViewMatrix, rot[2], [0, 0, 1]);
+  }
+
+  const normalMatrix = mat4.create();
+  mat4.invert(normalMatrix, modelViewMatrix);
+  mat4.transpose(normalMatrix, normalMatrix);
+
   setPositionAttribute(gl, buffers, programInfo);
-
   setTextureAttribute(gl, buffers, programInfo);
-
-  // Tell WebGL which indices to use to index the vertices
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
+  setNormalAttribute(gl, buffers, programInfo);
 
-  // Tell WebGL to use our program when drawing
   gl.useProgram(programInfo.program);
 
-  // Set the shader uniforms
-  gl.uniformMatrix4fv(
-    programInfo.uniformLocations.projectionMatrix,
-    false,
-    projectionMatrix,
-  );
-  gl.uniformMatrix4fv(
-    programInfo.uniformLocations.modelViewMatrix,
-    false,
-    modelViewMatrix,
-  );
+  gl.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix);
+  gl.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, modelViewMatrix);
+  gl.uniformMatrix4fv(programInfo.uniformLocations.normalMatrix, false, normalMatrix);
 
-    // Tell WebGL we want to affect texture unit 0
   gl.activeTexture(gl.TEXTURE0);
-
-  // Bind the texture to texture unit 0
   gl.bindTexture(gl.TEXTURE_2D, texture);
-
-  // Tell the shader we bound the texture to texture unit 0
   gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
 
   {
-    const vertexCount = 36;
-    const type = gl.UNSIGNED_SHORT;
-    const offset = 0;
-    gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
+    const vertexCount = buffers.vertexCount || 36;
+    gl.drawElements(gl.TRIANGLES, vertexCount, gl.UNSIGNED_SHORT, 0);
   }
 }
 
-// Tell WebGL how to pull out the positions from the position
-// buffer into the vertexPosition attribute.
 function setPositionAttribute(gl, buffers, programInfo) {
-  const numComponents = 3; // pull out 3 values per iteration
-  const type = gl.FLOAT; // the data in the buffer is 32bit floats
-  const normalize = false; // don't normalize
-  const stride = 0; // how many bytes to get from one set of values to the next
-  // 0 = use type and numComponents above
-  const offset = 0; // how many bytes inside the buffer to start from
   gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
-  gl.vertexAttribPointer(
-    programInfo.attribLocations.vertexPosition,
-    numComponents,
-    type,
-    normalize,
-    stride,
-    offset,
-  );
+  gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, 3, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
 }
 
-// Tell WebGL how to pull out the colors from the color buffer
-// into the vertexColor attribute.
-function setColorAttribute(gl, buffers, programInfo) {
-  const numComponents = 4;
-  const type = gl.FLOAT;
-  const normalize = false;
-  const stride = 0;
-  const offset = 0;
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
-  gl.vertexAttribPointer(
-    programInfo.attribLocations.vertexColor,
-    numComponents,
-    type,
-    normalize,
-    stride,
-    offset,
-  );
-  gl.enableVertexAttribArray(programInfo.attribLocations.vertexColor);
+function setTextureAttribute(gl, buffers, programInfo) {
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffers.textureCoord);
+  gl.vertexAttribPointer(programInfo.attribLocations.textureCoord, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
 }
 
-// tell webgl how to pull out the texture coordinates from buffer
-function setTextureAttribute(gl, buffers, programInfo) {
-  const num = 2; // every coordinate composed of 2 values
-  const type = gl.FLOAT; // the data in the buffer is 32-bit float
-  const normalize = false; // don't normalize
-  const stride = 0; // how many bytes to get from one set to the next
-  const offset = 0; // how many bytes inside the buffer to start from
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffers.textureCoord);
-  gl.vertexAttribPointer(
-    programInfo.attribLocations.textureCoord,
-    num,
-    type,
-    normalize,
-    stride,
-    offset,
-  );
-  gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
+function setNormalAttribute(gl, buffers, programInfo) {
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
+  gl.vertexAttribPointer(programInfo.attribLocations.vertexNormal, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(programInfo.attribLocations.vertexNormal);
 }
 
 export { drawScene };

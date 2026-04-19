@@ -2,71 +2,291 @@
 
 <span style="display:none;" id="player-id"><%= userId %></span>
 <span style="display:none;" id="game-id"><%= gameId %></span>
+<script
+  src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"
+  integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
+  crossorigin="anonymous"
+  defer></script>
+<script src="/kostky/renderer.js" type="module"></script>
 <script src="/js/game/multiplayer.js" defer></script>
 
-<div class="container">
-    <div class="game-wrapper">
+<style>
+  .game-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  .game-header {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  .game-header h1 { margin-bottom: 0.25rem; }
+  .game-header .game-meta {
+    font-size: 0.95rem;
+    color: #2c3e50;
+  }
+
+  .game-middle {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .canvas-anchor {
+    position: relative;
+    width: 100%;
+    max-width: 700px;
+  }
+
+  #dice-3d-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    min-height: 350px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+  }
+  #cnv {
+    width: 100%; height: 100%; display: block;
+    image-rendering: pixelated; image-rendering: crisp-edges;
+  }
+
+  #canvas-score-overlay {
+    position: absolute;
+    top: 12px; left: 14px;
+    color: #fff;
+    font-size: 1.3rem;
+    font-weight: bold;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.6);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  #dice-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none; overflow: hidden;
+  }
+  .dice-label {
+    position: absolute; transform: translate(-50%, -50%);
+    pointer-events: auto; cursor: pointer; user-select: none;
+    width: 48px; height: 48px; display: none; border-radius: 50%;
+  }
+  .dice-label.visible { display: block; }
+  .dice-label .dice-value {
+    position: absolute; bottom: 100%; left: 50%;
+    transform: translateX(-50%);
+    font-size: 22px; font-weight: bold; color: #fff;
+    text-shadow: 0 0 6px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7);
+    padding: 2px 10px; border-radius: 4px; white-space: nowrap;
+    opacity: 0; transition: opacity 0.15s; pointer-events: none;
+  }
+  .dice-label:hover .dice-value,
+  .dice-label.selected .dice-value { opacity: 1; }
+  .dice-label:hover .dice-value {
+    color: #f0c040;
+    text-shadow: 0 0 12px rgba(240,192,64,0.6), 0 0 4px rgba(0,0,0,0.9);
+  }
+  .dice-label.selected .dice-value {
+    color: #f0c040; background: rgba(240,192,64,0.15);
+    text-shadow: 0 0 16px rgba(240,192,64,0.8);
+  }
+  .dice-label.wild .dice-value {
+    color: #e74c3c;
+    text-shadow: 0 0 12px rgba(231,76,60,0.8), 0 0 4px rgba(0,0,0,0.9);
+  }
+
+  .game-side-panel {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    margin-left: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 150px;
+    padding: 1rem;
+    border-radius: 0;
+    border: 3px solid transparent;
+    border-image: linear-gradient(135deg, #7f3004, #cf763b, #b4901e, #cf763b, #7f3004) 1;
+    white-space: nowrap;
+  }
+  .game-side-panel .score-label {
+    font-size: 0.85rem;
+    color: #2c3e50;
+  }
+  .game-side-panel .score-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #cf763b;
+  }
+  .game-side-panel .bust-message {
+    color: #7f3004;
+    font-weight: bold;
+    font-size: 1rem;
+    padding: 0.5rem 0;
+    animation: shake 0.4s ease;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25%       { transform: translateX(-6px); }
+    75%       { transform: translateX(6px); }
+  }
+
+  .game-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+
+  #game-finished {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  /* Wild dice picker — inline row of 1-6 */
+  #wild-picker {
+    display: none;
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    background: rgba(30, 20, 10, 0.92);
+    border: 2px solid #cf763b;
+    border-radius: 8px;
+    padding: 8px 12px;
+    gap: 6px;
+    align-items: center;
+  }
+  #wild-picker.visible { display: flex; }
+  #wild-picker .wild-pick-label {
+    color: #e8ddd0;
+    font-size: 0.85rem;
+    margin-right: 4px;
+  }
+  #wild-picker .wild-pick-btn {
+    width: 36px; height: 36px;
+    border: 2px solid #cf763b;
+    border-radius: 6px;
+    background: #3a2a1a;
+    color: #e8ddd0;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  #wild-picker .wild-pick-btn:hover {
+    background: #cf763b;
+    color: #fff;
+  }
+  #wild-picker .wild-pick-cancel {
+    margin-left: 4px;
+    background: none;
+    border: 1px solid #7a665d;
+    color: #7a665d;
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+
+  @media (max-width: 700px) {
+    .game-side-panel {
+      position: static;
+      min-width: unset;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .game-middle { flex-direction: column; align-items: center; }
+  }
+</style>
+
+<div class="game-page">
+
+    <div class="game-header">
         <h1>Multiplayer</h1>
-
-        <div id="game-finished" style="display:none;">
-            <div class="finished-banner">
-                <p id="finished-text" style="display:flex; align-items:center; gap:0.5rem; justify-content:center;">
-                    <!-- svg se doplni z js -->
-                    Hra skončila!
-                </p>
-            </div>
-            <a href="/matchmaking/lobby">
-                <button class="btn-primary" style="margin-top:1rem;">Zpět do lobby</button>
-            </a>
-        </div>
-
-        <div class="game-layout">
-
-            <div class="game-left">
-                <div class="game-state">
-                    <p>Hrajete proti: <strong><span id="opponent-name">…</span></strong></p>
-                    <p>Vaše skóre: <span id="player-score">0</span></p>
-                    <p>Skóre soupeře: <span id="opponent-score">0</span></p>
-                    <p>Cíl: <span id="target-score">3000</span></p>
-                    <p style="margin-top:0.5rem; display:flex; align-items:center; gap:0.4rem;" id="turn-indicator"></p>
-                </div>
-
-                <div class="game-board">
-                    <p>Body na stole: <span id="turn-score">0</span></p>
-
-                    <div id="selection-score-row" class="score-row" style="display:none;">
-                        <span>Body za výběr:</span>
-                        <span id="selection-score" class="score-highlight">0</span>
-                    </div>
-
-                    <div id="bust-msg" class="bust-message" style="display:none; align-items:center; gap:0.4rem;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7f3004" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="12" y1="8" x2="12" y2="12"/>
-                            <line x1="12" y1="16" x2="12.01" y2="16"/>
-                        </svg>
-                        Farkle! Přišel jsi o body v tomto kole.
-                    </div>
-                </div>
-
-                <div id="action-area" class="action-area">
-                    <button id="btn-roll"    class="btn-primary"   onclick="rollDice()">Hodit kostkami</button>
-                    <button id="btn-wild"    class="btn-secondary" onclick="rollDice(true)" style="display:none; background: #8d8638;">Divoký hod</button>
-                    <button id="btn-confirm" class="btn-primary"   onclick="confirmSelection()" style="display:none;" disabled>Potvrdit výběr</button>
-                    <button id="btn-reroll"  class="btn-secondary" onclick="rerollDice()"       style="display:none;">Hodit znovu</button>
-                    <button id="btn-bank"    class="btn-secondary" onclick="bankPoints()"        style="display:none;">Bankovat</button>
-                </div>
-            </div>
-
-            <div class="game-right">
-                <div class="game-board">
-                    <p>Zbývající kostky: <span id="dice-left-count">6</span></p>
-                    <div id="dice-area" class="dice-area"></div>
-                </div>
-            </div>
-
+        <div class="game-meta">
+            Proti: <span id="opponent-name">...</span>
+            &middot; Cil: <span id="target-score">3000</span>
         </div>
     </div>
+
+    <div id="game-finished" style="display: none;">
+        <div class="finished-banner">
+            <p id="finished-text" style="display:flex; align-items:center; gap:0.5rem; justify-content:center;">
+                Hra skoncila!
+            </p>
+        </div>
+        <a href="/matchmaking/lobby">
+            <button class="btn-primary" style="margin-top:1rem;">Zpet do lobby</button>
+        </a>
+    </div>
+
+    <div class="game-layout">
+        <div class="game-middle">
+            <div class="canvas-anchor">
+                <div id="dice-3d-wrap">
+                    <div id="canvas-score-overlay"><span id="player-score">0</span></div>
+                    <canvas id="cnv" width="640" height="480"></canvas>
+                    <div id="dice-overlay">
+                        <div class="dice-label" data-index="0"><span class="dice-value"></span></div>
+                        <div class="dice-label" data-index="1"><span class="dice-value"></span></div>
+                        <div class="dice-label" data-index="2"><span class="dice-value"></span></div>
+                        <div class="dice-label" data-index="3"><span class="dice-value"></span></div>
+                        <div class="dice-label" data-index="4"><span class="dice-value"></span></div>
+                        <div class="dice-label" data-index="5"><span class="dice-value"></span></div>
+                    </div>
+                    <div id="wild-picker">
+                        <span class="wild-pick-label">Divoka kostka:</span>
+                        <button class="wild-pick-btn" data-val="1">1</button>
+                        <button class="wild-pick-btn" data-val="2">2</button>
+                        <button class="wild-pick-btn" data-val="3">3</button>
+                        <button class="wild-pick-btn" data-val="4">4</button>
+                        <button class="wild-pick-btn" data-val="5">5</button>
+                        <button class="wild-pick-btn" data-val="6">6</button>
+                        <button class="wild-pick-cancel" id="wild-pick-cancel">X</button>
+                    </div>
+                </div>
+                <div class="game-side-panel">
+                    <div>
+                        <div class="score-label">Skore soupere</div>
+                        <div class="score-value" id="opponent-score">0</div>
+                    </div>
+                    <div>
+                        <div class="score-label">Body na stole</div>
+                        <div class="score-value" id="turn-score">0</div>
+                    </div>
+                    <div id="selection-score-row" style="display:none;">
+                        <div class="score-label">Body za vyber</div>
+                        <div class="score-value" id="selection-score">0</div>
+                    </div>
+                    <div id="bust-msg" class="bust-message" style="display:none;">
+                        Farkle! Prisel jsi o body v tomto kole.
+                    </div>
+                    <p style="display:flex; align-items:center; gap:0.4rem; margin-top:0.5rem;" id="turn-indicator"></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="action-area" class="game-actions">
+            <button id="btn-roll"    class="btn-primary"   onclick="rollDice()">Hodit kostkami</button>
+            <button id="btn-wild"    class="btn-secondary" onclick="rollDice(true)" style="display:none; background: #8d8638;">Divoky hod</button>
+            <button id="btn-confirm" class="btn-primary"   onclick="confirmSelection()" style="display:none;" disabled>Potvrdit vyber</button>
+            <button id="btn-reroll"  class="btn-secondary" onclick="rerollDice()"       style="display:none;">Hodit znovu</button>
+            <button id="btn-bank"    class="btn-secondary" onclick="bankPoints()"        style="display:none;">Bankovat</button>
+        </div>
+    </div>
+
 </div>
 
 <%- include('../partials/footer') %>

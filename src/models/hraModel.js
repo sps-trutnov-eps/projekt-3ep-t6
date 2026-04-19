@@ -64,15 +64,16 @@ class Game {
         const { rows } = await db.query('SELECT * FROM games WHERE id = $1', [gameId]);
         return rows[0];
     }
-    // Uloží výsledek hodu do last_roll bez změny turn_score nebo dice_left
-    static async saveRoll(gameId, rollValues) {
+    // Uloží výsledek hodu a nový seed
+    static async saveRoll(gameId, rollValues, nextSeed) {
         const sql = `
             UPDATE games
-            SET last_roll = $2
+            SET last_roll = $2,
+                last_seed = $3
             WHERE id = $1
             RETURNING *;
         `;
-        const { rows } = await db.query(sql, [gameId, JSON.stringify(rollValues)]);
+        const { rows } = await db.query(sql, [gameId, JSON.stringify(rollValues), nextSeed]);
         return rows[0];
     }
 

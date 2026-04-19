@@ -54,7 +54,7 @@ function checkCurrentScore(chosenDice) {
     // 3. Zbylé jedničky a pětky
     score += diceLeft[0] * 100;
     score += diceLeft[4] * 50;
-    
+
     // 4. Pokud zbyly wild dice, každá je za 100 (jako jednička)
     score += wilds * 100;
 
