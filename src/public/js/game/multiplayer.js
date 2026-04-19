@@ -101,7 +101,11 @@ function renderState(g) {
 
         // Zobraz bust soupeře pokud padlo
         const lastRoll = Array.isArray(g.last_roll) ? g.last_roll : JSON.parse(g.last_roll ?? '[]');
-        renderDicePassive(lastRoll);
+        if (lastRoll.length > 0) {
+            renderDicePassive(lastRoll);
+        } else {
+            renderDiceEmpty(g.dice_left);
+        }
         return;
     }
 
@@ -109,19 +113,33 @@ function renderState(g) {
     stopPolling();
     waitingForOther = false;
 
-const lastRoll = Array.isArray(g.last_roll) ? g.last_roll : JSON.parse(g.last_roll ?? '[]');
+    const lastRoll = Array.isArray(g.last_roll) ? g.last_roll : JSON.parse(g.last_roll ?? '[]');
 
-if (lastRoll.length > 0) {
-    // Hod proběhl — čeká se na výběr
-    renderDiceActive(lastRoll);
-    showButtonsAfterRoll();
-} else {
-    // Nové kolo — čeká se na hod
-    renderDiceEmpty(g.dice_left);
-    showButtonsBeforeRoll(); 
+    if (lastRoll.length > 0) {
+        // Hod proběhl — čeká se na výběr
+        renderDiceActive(lastRoll);
+        showButtonsAfterRoll();
+        hideBust(); // Schováme bust jen pokud jsme hodili a hrajeme
+    } else {
+        // Nové kolo — čeká se na hod nebo bank
+        renderDiceEmpty(g.dice_left);
+        if (g.turn_score > 0) {
+            // Jsme uprostřed tahu (již jsme něco vybrali)
+            showButtonsMiddleOfTurn();
+        } else {
+            // Úplný začátek tahu
+            showButtonsBeforeRoll();
+            hideBust();
+        }
+    }
 }
 
-    hideBust();
+function showButtonsMiddleOfTurn() {
+    document.getElementById('btn-roll').style.display    = 'none';
+    document.getElementById('btn-wild').style.display    = 'none';
+    document.getElementById('btn-confirm').style.display = 'none';
+    document.getElementById('btn-reroll').style.display  = 'block';
+    document.getElementById('btn-bank').style.display    = 'block';
 }
 
 // dice rendering 
@@ -159,6 +177,7 @@ function renderDiceEmpty(count) {
 function makeDie(value, idx, clickable) {
     const die = document.createElement('div');
     die.className = 'dice-die';
+    if (value === 0) die.classList.add('wild-die');
     die.dataset.idx = idx;
     die.dataset.val = value;
     die.appendChild(makeDiceFace(value));
@@ -169,7 +188,13 @@ function makeDie(value, idx, clickable) {
 }
 
 function makeDiceFace(value) {
-    // Stejná implementace jako v singleplayer.js
+    if (value === 0) {
+        // Speciální vizuál pro Wild Die
+        const wild = document.createElement('div');
+        wild.className = 'wild-icon';
+        wild.innerHTML = '?';
+        return wild;
+    }
     const grid = document.createElement('div');
     grid.className = 'dice-face-grid';
 
