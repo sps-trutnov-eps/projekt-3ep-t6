@@ -230,21 +230,79 @@ function toggleDie(die) {
         die.classList.remove('selected');
         const pos = selectedDice.findIndex(d => d.idx === idx);
         if (pos !== -1) selectedDice.splice(pos, 1);
+        
+        // Remove badge if exists
+        const badge = die.querySelector('.wild-choice-badge');
+        if (badge) badge.remove();
+        
+        updateSelectionScore();
     } else {
-        die.classList.add('selected');
-        selectedDice.push({ idx, val });
+        if (val === 0) {
+            showWildSelector(die, (choice) => {
+                die.classList.add('selected');
+                selectedDice.push({ idx, val, mappedTo: choice });
+                
+                // Add visual badge
+                let badge = die.querySelector('.wild-choice-badge');
+                if (!badge) {
+                    badge = document.createElement('div');
+                    badge.className = 'wild-choice-badge';
+                    die.appendChild(badge);
+                }
+                badge.textContent = choice;
+                
+                updateSelectionScore();
+            });
+        } else {
+            die.classList.add('selected');
+            selectedDice.push({ idx, val, mappedTo: val });
+            updateSelectionScore();
+        }
     }
-    updateSelectionScore();
+}
+
+function showWildSelector(die, onChoice) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    
+    const content = document.createElement('div');
+    content.className = 'modal-content';
+    content.innerHTML = `
+        <h3>Vyberte hodnotu pro divokou kostku</h3>
+        <div class="wild-options">
+            <button class="wild-option-btn" data-val="1">1</button>
+            <button class="wild-option-btn" data-val="2">2</button>
+            <button class="wild-option-btn" data-val="3">3</button>
+            <button class="wild-option-btn" data-val="4">4</button>
+            <button class="wild-option-btn" data-val="5">5</button>
+            <button class="wild-option-btn" data-val="6">6</button>
+        </div>
+        <button class="btn-secondary" style="margin-top: 1.5rem;" id="wild-cancel">Zrušit</button>
+    `;
+    
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+    
+    content.querySelectorAll('.wild-option-btn').forEach(btn => {
+        btn.onclick = () => {
+            onChoice(parseInt(btn.dataset.val));
+            document.body.removeChild(overlay);
+        };
+    });
+    
+    document.getElementById('wild-cancel').onclick = () => {
+        document.body.removeChild(overlay);
+    };
 }
 
 function updateSelectionScore() {
-    const vals   = selectedDice.map(d => d.val);
-    const points = vals.length > 0 ? checkScore(vals) : 0;
-    const valid  = vals.length > 0 ? isSelectionValid(vals) : false;
+    const effectiveVals = selectedDice.map(d => d.mappedTo);
+    const points = effectiveVals.length > 0 ? checkScore(effectiveVals) : 0;
+    const valid  = effectiveVals.length > 0 ? isSelectionValid(effectiveVals) : false;
     const row    = document.getElementById('selection-score-row');
     const span   = document.getElementById('selection-score');
 
-    if (vals.length > 0) {
+    if (effectiveVals.length > 0) {
         row.style.display  = 'flex';
         span.textContent   = points;
         span.style.color   = valid ? '#cf763b' : '#7f3004';
@@ -258,6 +316,7 @@ function updateSelectionScore() {
 
 // score engine (mirror ze serveru) 
 function checkScore(dice) {
+    // Dice here are already mapped (1-6)
     let counts = [0,0,0,0,0,0];
     let score  = 0;
     for (const d of dice) counts[d - 1]++;
@@ -331,13 +390,12 @@ async function rollDice(useWild = false) {
 
 async function confirmSelection() {
     if (selectedDice.length === 0) return;
-    const vals = selectedDice.map(d => d.val);
 
     try {
         const res  = await fetch(`/game/multiplayer/${GAME_ID}/select`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ selectedDice: vals }),
+            body: JSON.stringify({ selectedDice }), // Sending full objects now
         });
         const data = await res.json();
         if (!data.success) return alert(data.error);
