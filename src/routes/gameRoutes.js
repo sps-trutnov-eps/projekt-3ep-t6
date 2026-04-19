@@ -18,4 +18,10 @@ router.post('/npc-turn', gameController.postNpcTurn);
 // secret cheat endpoint for testing
 router.post('/cheat', gameController.postCheat);
 
+router.get('/multiplayer/:gameId', gameController.getMultiplayer);
+router.get('/multiplayer/:gameId/state', gameController.getMultiplayerState);
+router.post('/multiplayer/:gameId/roll', gameController.postMultiplayerRoll);
+router.post('/multiplayer/:gameId/select', gameController.postMultiplayerSelect);
+router.post('/multiplayer/:gameId/bank', gameController.postMultiplayerBank);
+
 module.exports = router;

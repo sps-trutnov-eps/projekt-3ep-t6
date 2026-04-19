@@ -20,6 +20,7 @@ class Game {
             last_seed INTEGER DEFAULT 10000,  
             status VARCHAR(20) DEFAULT 'ACTIVE',
             last_roll JSONB DEFAULT '[]',
+            target_score INTEGER DEFAULT 3000,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `;
@@ -32,6 +33,7 @@ class Game {
         `ALTER TABLE games ADD COLUMN IF NOT EXISTS dice_left INTEGER DEFAULT 6`,
         `ALTER TABLE games ADD COLUMN IF NOT EXISTS last_roll JSONB DEFAULT '[]'`,
         'ALTER TABLE games ADD COLUMN IF NOT EXISTS last_seed INTEGER DEFAULT 10000',
+        'ALTER TABLE games ADD COLUMN IF NOT EXISTS target_score INTEGER DEFAULT 3000',
       ];
 
       for (const sql of migrations) {
@@ -43,13 +45,13 @@ class Game {
    * Vytvoří novou hru mezi dvěma hráči
    * První na tahu je player1
    */
-  static async create(player1Id, player2Id) {
+  static async create(player1Id, player2Id, targetScore = 3000) {
       const sql = `
-        INSERT INTO games (player1_id, player2_id, current_turn_id, dice_left)
-        VALUES ($1, $2, $1, 6)
+        INSERT INTO games (player1_id, player2_id, current_turn_id, dice_left, target_score)
+        VALUES ($1, $2, $1, 6, $3)
         RETURNING *;
       `;
-      const { rows } = await db.query(sql, [player1Id, player2Id]);
+      const { rows } = await db.query(sql, [player1Id, player2Id, targetScore]);
       return rows[0];
   }
 
@@ -103,29 +105,26 @@ class Game {
      * - Resetuje se počet kostek na 6
      */
     static async bust(gameId, nextPlayerId, rollValues, nextSeed) {
+        const params = [gameId, nextPlayerId];
+        let seedClause = '';
+        if (nextSeed !== undefined) {
+            seedClause = ', last_seed = $3';
+            params.push(nextSeed);
+        }
         const sql = `
             UPDATE games
             SET turn_score = 0,
                 dice_left = 6,
                 current_turn_id = $2,
-                last_roll = '[]',
-                last_seed = $3
+                last_roll = '[]'${seedClause}
             WHERE id = $1
             RETURNING *;
         `;
-        const { rows } = await db.query(sql, [gameId, nextPlayerId, nextSeed]);
+        const { rows } = await db.query(sql, params);
         return rows[0];
     }
 
-    /**
-     * Bank - Hráč se rozhodl uložit body a předat tah
-     * - Body z 'turn_score' se přičtou k jeho celkovému skóre (p1_score nebo p2_score)
-     * - Resetuje se turn_score na 0
-     * - Tah se předá soupeři
-     * - Reset kostek na 6
-     */
     static async bankPoints(gameId, playerId, nextPlayerId) {
-        // Nejdřív zjistíme, jestli je to player1 nebo player2, abychom věděli, kam přičíst
         const game = await this.findById(gameId);
         if (!game) throw new Error('Game not found');
 
@@ -138,14 +137,14 @@ class Game {
             throw new Error('Player not in this game');
         }
 
-        // Dynamicky sestavíme query podle toho, komu přičítáme
         const sql = `
             UPDATE games
             SET 
                 ${columnToUpdate} = ${columnToUpdate} + turn_score,
                 turn_score = 0,
                 dice_left = 6,
-                current_turn_id = $2
+                current_turn_id = $2,
+                last_roll = '[]'
             WHERE id = $1
             RETURNING *;
         `;
@@ -169,13 +168,31 @@ class Game {
         return rows[0];
     }
     
-    static async createSingleplayerGame(playerId) {
+    static async createSingleplayerGame(playerId, targetScore = 3000) {
         const sql = `
-            INSERT INTO games (player1_id, current_turn_id, game_mode, dice_left)
-            VALUES ($1, $1, 'SINGLEPLAYER', 6)
+            INSERT INTO games (player1_id, current_turn_id, game_mode, dice_left, target_score)
+            VALUES ($1, $1, 'SINGLEPLAYER', 6, $2)
             RETURNING *;
         `;
-        const { rows } = await db.query(sql, [playerId]);
+        const { rows } = await db.query(sql, [playerId, targetScore]);
+        return rows[0];
+    }
+
+    /**
+     * Bank NPC points in singleplayer mode
+     */
+    static async bankNpcPoints(gameId, points) {
+        const sql = `
+            UPDATE games
+            SET 
+                p2_score = p2_score + $2,
+                turn_score = 0,
+                dice_left = 6,
+                current_turn_id = player1_id
+            WHERE id = $1
+            RETURNING *;
+        `;
+        const { rows } = await db.query(sql, [gameId, points]);
         return rows[0];
     }
 }

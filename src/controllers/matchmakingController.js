@@ -1,4 +1,7 @@
 const Room = require('../models/roomModel');
+const Friend = require('../models/friendModel');
+const Invitation = require('../models/invitationModel');
+const Game = require('../models/hraModel');
 
 exports.getMatchmakingPage = (req, res) => {
   res.render('matchmaking/index', {
@@ -19,14 +22,18 @@ exports.createRoom = async (req, res) => {
       return res.status(401).json({ error: 'Nejsi přihlášen' });
     }
 
-    const room = await Room.create(req.session.user.id, true); // vychozi je private
+    const { targetScore } = req.body;
+    const score = targetScore ? parseInt(targetScore) : 3000;
+
+    const room = await Room.create(req.session.user.id, true, score); // vychozi je private
 
     res.json({
       success: true,
       room: {
         id: room.id,
         code: room.invite_code,
-        type: room.room_type
+        type: room.room_type,
+        targetScore: room.target_score
       }
     });
   } catch (err) {
@@ -128,6 +135,156 @@ exports.findPublicRoom = async (req, res) => {
     res.json({ success: true, room: updated });
   } catch (err) {
     console.error('findPublicRoom error:', err);
+    res.status(500).json({ error: 'Chyba serveru' });
+  }
+};
+
+exports.getFriendsForInvite = async (req, res) => {
+    try {
+        if (!req.session.user) {
+            return res.status(401).json({ error: 'Nejsi přihlášen' });
+        }
+        const friends = await Friend.getFriends(req.session.user.id);
+        res.json({ success: true, friends });
+    } catch (err) {
+        console.error('getFriendsForInvite error:', err);
+        res.status(500).json({ error: 'Chyba serveru při načítání přátel' });
+    }
+};
+
+exports.sendInvite = async (req, res) => {
+    try {
+        if (!req.session.user) {
+            return res.status(401).json({ error: 'Nejsi přihlášen' });
+        }
+        const { friendId, roomId } = req.body;
+        
+        const invitation = await Invitation.create(req.session.user.id, friendId, roomId);
+        
+        if (!invitation) {
+            return res.status(400).json({ error: 'Pozvánka již byla odeslána' });
+        }
+        
+        res.json({ success: true });
+    } catch (err) {
+        console.error('sendInvite error:', err);
+        res.status(500).json({ error: 'Chyba serveru při odesílání pozvánky' });
+    }
+};
+
+// Polling
+exports.getRoomStatus = async (req, res) => {
+  try {
+    if (!req.session.user) return res.status(401).json({ error: 'Nejsi přihlášen' });
+    const room = await Room.findById(req.params.roomId);
+    if (!room) return res.status(404).json({ error: 'Místnost nenalezena' });
+    res.json({ success: true, status: room.status, gameId: room.game_id });
+  } catch (err) {
+    console.error('getRoomStatus error:', err);
+    res.status(500).json({ error: 'Chyba serveru' });
+  }
+};
+
+exports.startGame = async (req, res) => {
+  try {
+    if (!req.session.user) return res.status(401).json({ error: 'Nejsi přihlášen' });
+    const room = await Room.findById(req.body.roomId);
+    if (!room) return res.status(404).json({ error: 'Místnost nenalezena' });
+    if (room.creator_id !== req.session.user.id) return res.status(403).json({ error: 'Nejsi tvůrce' });
+    if (room.status !== 'READY') return res.status(400).json({ error: 'Čeká se na druhého hráče' });
+
+    const game = await Game.create(room.creator_id, room.player2_id, room.target_score);
+    await Room.startGame(room.id, game.id);
+
+    res.json({ success: true, gameId: game.id });
+  } catch (err) {
+    console.error('startGame error:', err);
+    res.status(500).json({ error: 'Chyba serveru' });
+  }
+};
+
+// Čekací stránka pro joineera
+exports.getWaitingPage = async (req, res) => {
+  try {
+    const room = await Room.findByCode(req.params.code);
+    if (!room) return res.redirect('/matchmaking/lobby');
+
+    res.render('matchmaking/waiting', {
+      title: 'Čekám na hru',
+      roomCode: room.invite_code,
+      targetScore: room.target_score
+    });
+  } catch (err) {
+    console.error('getWaitingPage error:', err);
+    res.redirect('/matchmaking/lobby');
+  }
+};
+
+// joineer se ptá jestli tvůrce spustil hru
+exports.waitForGame = async (req, res) => {
+  try {
+    if (!req.session.user) return res.status(401).json({ error: 'Nejsi přihlášen' });
+    const room = await Room.findByCode(req.params.code);
+    if (!room) return res.status(404).json({ error: 'Místnost nenalezena' });
+    res.json({ success: true, status: room.status, gameId: room.game_id });
+  } catch (err) {
+    console.error('waitForGame error:', err);
+    res.status(500).json({ error: 'Chyba serveru' });
+  }
+};
+
+// pending pozvanky pro prihlaseneho uzivatele
+exports.getMyInvitations = async (req, res) => {
+  try {
+    if (!req.session.user) return res.status(401).json({ error: 'Nejsi přihlášen' });
+    const invitations = await Invitation.listByReceiver(req.session.user.id);
+    res.json({ success: true, invitations });
+  } catch (err) {
+    console.error('getMyInvitations error:', err);
+    res.status(500).json({ error: 'Chyba serveru' });
+  }
+};
+
+exports.getNotifications = async (req, res) => {
+  try {
+    if (!req.session.user) return res.status(401).json({ error: 'Nejsi přihlášen' });
+    const userId = req.session.user.id;
+
+    const invitations = await Invitation.listByReceiver(userId);
+    const friendRequests = await Friend.getPendingRequests(userId);
+
+    res.json({
+      success: true,
+      invitations,
+      friendRequests
+    });
+  } catch (err) {
+    console.error('getNotifications error:', err);
+    res.status(500).json({ success: false, error: 'Chyba serveru' });
+  }
+};
+
+// prijmout pozvanku
+exports.acceptInvite = async (req, res) => {
+  try {
+    if (!req.session.user) return res.status(401).json({ error: 'Nejsi přihlášen' });
+    const { invitationId } = req.body;
+
+    const invitation = await Invitation.findById(invitationId);
+    if (!invitation) return res.status(404).json({ error: 'Pozvánka nenalezena' });
+    if (invitation.receiver_id !== req.session.user.id) return res.status(403).json({ error: 'Není tvoje pozvánka' });
+
+    const room = await Room.findById(invitation.room_id);
+    if (!room || room.status !== 'WAITING') {
+      return res.status(400).json({ error: 'Místnost již není dostupná' });
+    }
+
+    await Room.join(room.id, req.session.user.id);
+    await Invitation.updateStatus(invitationId, 'ACCEPTED');
+
+    res.json({ success: true, roomCode: room.invite_code });
+  } catch (err) {
+    console.error('acceptInvite error:', err);
     res.status(500).json({ error: 'Chyba serveru' });
   }
 };

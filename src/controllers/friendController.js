@@ -65,6 +65,19 @@ exports.acceptFriendRequest = async (req, res) => {
     }
 };
 
+exports.acceptFriendRequestAjax = async (req, res) => {
+    const { friendId } = req.body;
+    const userId = req.session.user.id;
+
+    try {
+        await Friend.acceptRequest(userId, friendId);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error accepting friend request ajax:', err);
+        res.status(500).json({ success: false, error: 'Chyba při přijímání žádosti' });
+    }
+};
+
 exports.removeFriend = async (req, res) => {
     const { friendId } = req.body;
     const userId = req.session.user.id;

@@ -7,7 +7,7 @@
     <div class="auth-card">
         <h1><%= message %></h1>
 
-        <form id="loginForm">
+        <form id="registerForm" method="POST" action="/auth/register">
             <div class="form-auth-div">
                 <label for="username">Uživatelské jméno</label>
                 <input type="text" id="username" name="username" required/>

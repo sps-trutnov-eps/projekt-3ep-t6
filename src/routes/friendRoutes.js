@@ -8,6 +8,7 @@ router.use(requireAuth);
 router.get('/', friendController.getFriendsPage);
 router.post('/request', friendController.sendFriendRequest);
 router.post('/accept', friendController.acceptFriendRequest);
+router.post('/accept-ajax', friendController.acceptFriendRequestAjax);
 router.post('/remove', friendController.removeFriend);
 
 module.exports = router;

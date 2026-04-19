@@ -52,21 +52,26 @@
         <!-- Vytvorit mistnost -->
         <div id="panel-create" class="lobby-panel" style="display:none;">
             <div class="panel-header">
-                <h3>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:6px;">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                        <polyline points="9 22 9 12 15 12 15 22"/>
-                    </svg>
-                    Nová místnost
-                </h3>
-                <button class="btn-close" onclick="closePanel()" title="Zavřít">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                </button>
+                <h3>Nová místnost</h3>
+                <button class="btn-close" onclick="closePanel()">✕</button>
             </div>
             <div class="panel-body">
+
+                <!-- Krok 1: tlačítko pro vytvoření -->
+                <div id="create-initial">
+                    <div style="margin-bottom: 1.5rem; text-align: center;">
+                        <label for="create-target-score" class="panel-label">Cílové skóre:</label>
+                        <input type="number" id="create-target-score" value="3000" min="500" step="500" class="code-input" style="width: 150px; text-align: center;">
+                    </div>
+                    <button class="btn-primary" id="btn-do-create" onclick="createRoom()" style="width:100%;">
+                        Vytvořit místnost
+                    </button>
+                    <div id="create-loading" style="display:none; text-align:center; margin-top:1rem;">
+                        <p>Vytvářím místnost…</p>
+                    </div>
+                </div>
+
+                <!-- Krok 2: místnost vytvořena, čekání na hráče -->
                 <div id="create-result" style="display:none;">
                     <p class="panel-label">Kód místnosti:</p>
                     <div class="room-code-display">
@@ -78,46 +83,45 @@
                             </svg>
                         </button>
                     </div>
-                    <p class="panel-hint">Pošli tento kód kamarádům, ať se připojí.</p>
 
-                    <label class="toggle-label">
+                    <label class="toggle-label" style="margin-top:1rem;">
                         <input type="checkbox" id="toggle-public" onchange="toggleVisibility()">
                         <span class="toggle-slider"></span>
                         Veřejná místnost
                     </label>
-                    <p class="panel-hint">Místnost je <strong id="visibility-status">privátní</strong> – vidí ji jen lidé s kódem.</p>
+                    <p class="panel-hint">Místnost je <strong id="visibility-status">privátní</strong></p>
 
-                    <button class="btn-primary" style="margin-top:1rem; width:100%;" onclick="alert('Spuštění hry – zatím není implementováno')">
-                        Spustit hru
+                    <!-- Stav čekání -->
+                    <div id="waiting-status" style="margin-top:1.5rem; padding:1rem; background:#e8ddd0; text-align:center;">
+                        <p id="waiting-text">⏳ Čekám na druhého hráče…</p>
+                    </div>
+
+                    <!-- Tlačítko spustit hru — skryté dokud se nepřipojí druhý -->
+                    <button
+                        id="btn-start-game"
+                        class="btn-primary"
+                        style="display:none; margin-top:1rem; width:100%;"
+                        onclick="startGame()"
+                    >
+                        ▶ Spustit hru
                     </button>
-                </div>
 
-                <div id="create-loading" style="display:none; text-align:center;">
-                    <p>Vytvářím místnost…</p>
+                    <!-- Pozvat přátele -->
+                    <div style="margin-top:1.5rem; border-top:1px solid #c8bdb0; padding-top:1rem;">
+                        <p class="panel-label">Pozvat přátele:</p>
+                        <div id="friends-list-invite">
+                            <p class="panel-hint">Načítám přátele…</p>
+                        </div>
+                    </div>
                 </div>
-
-                <button class="btn-primary" id="btn-do-create" onclick="createRoom()" style="width:100%;">
-                    Vytvořit místnost
-                </button>
             </div>
         </div>
 
         <!-- Pripojit se kodem -->
         <div id="panel-join" class="lobby-panel" style="display:none;">
             <div class="panel-header">
-                <h3>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:6px;">
-                        <circle cx="7.5" cy="15.5" r="5.5"/>
-                        <path d="M21 2l-9.6 9.6M15.5 7.5l3 3"/>
-                    </svg>
-                    Připojit se
-                </h3>
-                <button class="btn-close" onclick="closePanel()" title="Zavřít">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                </button>
+                <h3>Připojit se</h3>
+                <button class="btn-close" onclick="closePanel()">✕</button>
             </div>
             <div class="panel-body">
                 <label class="panel-label" for="join-code-input">Zadej kód místnosti</label>
@@ -125,8 +129,8 @@
                     type="text"
                     id="join-code-input"
                     class="code-input"
-                    placeholder="např. ABC123"
-                    maxlength="8"
+                    placeholder="např. ABC12"
+                    maxlength="5"
                     oninput="this.value = this.value.toUpperCase()"
                     onkeydown="if(event.key==='Enter') joinRoom()"
                 />
@@ -140,26 +144,11 @@
         <!-- Nahodna hra -->
         <div id="panel-random" class="lobby-panel" style="display:none;">
             <div class="panel-header">
-                <h3>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:6px;">
-                        <rect x="2" y="2" width="20" height="20" rx="3"/>
-                        <circle cx="8" cy="8" r="1.2" fill="#2c3e50"/>
-                        <circle cx="16" cy="8" r="1.2" fill="#2c3e50"/>
-                        <circle cx="8" cy="16" r="1.2" fill="#2c3e50"/>
-                        <circle cx="16" cy="16" r="1.2" fill="#2c3e50"/>
-                        <circle cx="12" cy="12" r="1.2" fill="#2c3e50"/>
-                    </svg>
-                    Náhodná hra
-                </h3>
-                <button class="btn-close" onclick="closePanel()" title="Zavřít">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                </button>
+                <h3>Náhodná hra</h3>
+                <button class="btn-close" onclick="closePanel()">✕</button>
             </div>
             <div class="panel-body" style="text-align:center;">
-                <p>Hledám dostupnou veřejnou místnost…</p>
+                <p id="random-status">Hledám dostupnou veřejnou místnost…</p>
                 <button class="btn-secondary" style="margin-top:1rem;" onclick="closePanel()">Zrušit</button>
             </div>
         </div>
@@ -167,7 +156,40 @@
     </div>
 </div>
 
+<style>
+    .friends-list-mini {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    .friend-invite-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e8ddd0;
+    }
+    .friend-invite-item:last-child { border-bottom: none; }
+    .friend-name { font-weight: 500; color: #2c3e50; }
+    .btn-invite-sm {
+        padding: 4px 10px;
+        font-size: 0.8rem;
+        background: #cf763b;
+        color: #f5efe8;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-family: 'MedievalSharp', serif;
+    }
+    .btn-invite-sm:disabled { background: #c8bdb0; cursor: default; }
+</style>
+
 <script>
+    // ── state ──────────────────────────────────────────────
+    let _roomId   = null;
+    let _roomCode = null;
+    let _pollInterval = null;
+
+    // ── panely ─────────────────────────────────────────────
     function showPanel(type) {
         closePanel(false);
         const el = document.getElementById('panel-' + type);
@@ -182,116 +204,245 @@
             const el = document.getElementById('panel-' + t);
             if (el) el.style.display = 'none';
         });
-        if (reset) resetCreatePanel();
-    }
-
-    async function createRoom() {
-    document.getElementById('btn-do-create').style.display = 'none';
-    document.getElementById('create-loading').style.display = 'block';
-
-    try {
-        const res = await fetch('/matchmaking/create', { method: 'POST' });
-        const data = await res.json();
-
-        if (!data.success) {
-            alert(data.error || 'Chyba při vytváření místnosti');
+        if (reset) {
+            stopPolling();
             resetCreatePanel();
-            return;
         }
-
-        window._currentRoomId = data.room.id;
-
-        document.getElementById('room-code-text').textContent = data.room.code;
-        document.getElementById('create-loading').style.display = 'none';
-        document.getElementById('create-result').style.display = 'block';
-    } catch (err) {
-        alert('Chyba spojení se serverem');
-        resetCreatePanel();
     }
-}
 
     function resetCreatePanel() {
-        document.getElementById('btn-do-create').style.display = 'block';
+        _roomId = null;
+        _roomCode = null;
+        document.getElementById('create-initial').style.display = 'block';
         document.getElementById('create-loading').style.display = 'none';
-        document.getElementById('create-result').style.display = 'none';
+        document.getElementById('create-result').style.display  = 'none';
+        document.getElementById('btn-do-create').style.display  = 'block';
+        document.getElementById('btn-start-game').style.display = 'none';
+        document.getElementById('waiting-text').textContent = '⏳ Čekám na druhého hráče…';
         const tog = document.getElementById('toggle-public');
         if (tog) tog.checked = false;
-        const vis = document.getElementById('visibility-status');
-        if (vis) vis.textContent = 'privátní';
+        document.getElementById('visibility-status').textContent = 'privátní';
     }
 
+    // ── vytvoření místnosti ────────────────────────────────
+    async function createRoom() {
+        const targetScore = document.getElementById('create-target-score').value;
+        document.getElementById('btn-do-create').style.display  = 'none';
+        document.getElementById('create-loading').style.display = 'block';
+
+        try {
+            const res  = await fetch('/matchmaking/create', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetScore })
+            });
+            const data = await res.json();
+
+            if (!data.success) {
+                alert(data.error || 'Chyba při vytváření místnosti');
+                resetCreatePanel();
+                return;
+            }
+
+            _roomId   = data.room.id;
+            _roomCode = data.room.code;
+
+            document.getElementById('room-code-text').textContent     = _roomCode;
+            document.getElementById('create-loading').style.display   = 'none';
+            document.getElementById('create-initial').style.display   = 'none';
+            document.getElementById('create-result').style.display    = 'block';
+
+            loadFriendsForInvite();
+            startPolling();
+        } catch (err) {
+            alert('Chyba spojení se serverem');
+            resetCreatePanel();
+        }
+    }
+
+    // ── polling stavu místnosti (pro tvůrce) ───────────────
+    function startPolling() {
+        stopPolling();
+        _pollInterval = setInterval(pollRoomStatus, 2500);
+    }
+
+    function stopPolling() {
+        if (_pollInterval) {
+            clearInterval(_pollInterval);
+            _pollInterval = null;
+        }
+    }
+
+    async function pollRoomStatus() {
+        if (!_roomId) return;
+        try {
+            const res  = await fetch(`/matchmaking/room-status/${_roomId}`);
+            const data = await res.json();
+            if (!data.success) return;
+
+            if (data.status === 'READY') {
+                stopPolling();
+                document.getElementById('waiting-text').textContent    = '✅ Hráč se připojil! Můžeš spustit hru.';
+                document.getElementById('waiting-status').style.background = '#d4edda';
+                document.getElementById('btn-start-game').style.display = 'block';
+            }
+
+            // Pokud tvůrce klikl Start a hra už běží (race condition)
+            if (data.status === 'IN_GAME' && data.gameId) {
+                stopPolling();
+                window.location.href = `/game/multiplayer/${data.gameId}`;
+            }
+        } catch (err) {
+            console.error('pollRoomStatus error:', err);
+        }
+    }
+
+    // ── spustit hru (tvůrce) ──────────────────────────────
+    async function startGame() {
+        try {
+            const res  = await fetch('/matchmaking/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomId: _roomId })
+            });
+            const data = await res.json();
+
+            if (!data.success) {
+                alert(data.error || 'Chyba při spouštění hry');
+                return;
+            }
+
+            window.location.href = `/game/multiplayer/${data.gameId}`;
+        } catch (err) {
+            alert('Chyba spojení se serverem');
+        }
+    }
+
+    // ── viditelnost místnosti ──────────────────────────────
     async function toggleVisibility() {
-    const isPublic = document.getElementById('toggle-public').checked;
-    document.getElementById('visibility-status').textContent = isPublic ? 'veřejná' : 'privátní';
-
-    if (!window._currentRoomId) return;
-
-    try {
-        await fetch('/matchmaking/room/visibility', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ roomId: window._currentRoomId, isPublic })
-        });
-    } catch (err) {
-        console.error('Nepodařilo se změnit viditelnost:', err);
+        const isPublic = document.getElementById('toggle-public').checked;
+        document.getElementById('visibility-status').textContent = isPublic ? 'veřejná' : 'privátní';
+        if (!_roomId) return;
+        try {
+            await fetch('/matchmaking/room/visibility', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomId: _roomId, isPublic })
+            });
+        } catch (err) {
+            console.error('toggleVisibility error:', err);
+        }
     }
-}
 
+    // ── kopírovat kód ──────────────────────────────────────
     function copyCode() {
-        const code = document.getElementById('room-code-text').textContent;
-        navigator.clipboard.writeText(code).then(() => {
+        navigator.clipboard.writeText(_roomCode).then(() => {
             const btn = document.querySelector('.btn-copy');
-            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8d8638" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
             setTimeout(() => {
                 btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#667889" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
             }, 1500);
         });
     }
 
+    // ── připojit se kódem ──────────────────────────────────
     async function joinRoom() {
-    const code = document.getElementById('join-code-input').value.trim();
-    document.getElementById('join-error').style.display = 'none';
+        const code = document.getElementById('join-code-input').value.trim();
+        document.getElementById('join-error').style.display = 'none';
 
-    if (code.length < 4) {
-        document.getElementById('join-error').style.display = 'block';
-        return;
-    }
-
-    try {
-        const res = await fetch(`/matchmaking/join/${code}`, { method: 'POST' });
-        const data = await res.json();
-
-        if (!data.success) {
-            document.getElementById('join-error').textContent = data.error || 'Místnost nenalezena nebo je plná.';
+        if (code.length < 4) {
             document.getElementById('join-error').style.display = 'block';
-         return;
+            return;
         }
-
-        alert(`Úspěšně připojeno k místnosti s kódem ${code}! Přesměrování do hry bude brzy...`);
-        } catch (err) {
-            document.getElementById('join-error').textContent = 'Chyba spojení se serverem.';
-            document.getElementById('join-error').style.display = 'block';
-        }
-    }
-
-    async function findPublicRoom() {
-    showPanel('random');
 
         try {
-            const res = await fetch('/matchmaking/public', { method: 'POST' });
+            const res  = await fetch(`/matchmaking/join/${code}`, { method: 'POST' });
             const data = await res.json();
 
             if (!data.success) {
-                document.querySelector('#panel-random .panel-body p').textContent = data.error || 'Žádná hra není dostupná.';
+                document.getElementById('join-error').textContent   = data.error || 'Místnost nenalezena nebo je plná.';
+                document.getElementById('join-error').style.display = 'block';
                 return;
+            }
+
+            // Úspěšně připojeni — přesměruj na čekací stránku
+            window.location.href = `/matchmaking/waiting/${code}`;
+        } catch (err) {
+            document.getElementById('join-error').textContent   = 'Chyba spojení se serverem.';
+            document.getElementById('join-error').style.display = 'block';
         }
-
-        alert('Připojeno do veřejné místnosti! Přesměrování do hry bude brzy...');
-    } catch (err) {
-        document.querySelector('#panel-random .panel-body p').textContent = 'Chyba spojení se serverem.';
     }
-}
 
+    // ── náhodná hra ────────────────────────────────────────
+    async function findPublicRoom() {
+        showPanel('random');
+        try {
+            const res  = await fetch('/matchmaking/public', { method: 'POST' });
+            const data = await res.json();
+
+            if (!data.success) {
+                document.getElementById('random-status').textContent = data.error || 'Žádná hra není dostupná.';
+                return;
+            }
+
+            // Připojeni do veřejné místnosti
+            const code = data.room.invite_code;
+            window.location.href = `/matchmaking/waiting/${code}`;
+        } catch (err) {
+            document.getElementById('random-status').textContent = 'Chyba spojení se serverem.';
+        }
+    }
+
+    // ── pozvat přátele ─────────────────────────────────────
+    async function loadFriendsForInvite() {
+        const list = document.getElementById('friends-list-invite');
+        try {
+            const res  = await fetch('/matchmaking/friends');
+            const data = await res.json();
+
+            if (!data.success || data.friends.length === 0) {
+                list.innerHTML = `<p class="panel-hint">Nemáš žádné přátele k pozvání.</p>`;
+                return;
+            }
+
+            list.innerHTML = '';
+            data.friends.forEach(friend => {
+                const item = document.createElement('div');
+                item.className = 'friend-invite-item';
+                item.innerHTML = `
+                    <span class="friend-name">${friend.username}</span>
+                    <button class="btn-invite-sm" onclick="sendInvite(${friend.id}, this)">Pozvat</button>
+                `;
+                list.appendChild(item);
+            });
+        } catch (err) {
+            list.innerHTML = `<p class="panel-hint">Chyba při načítání přátel.</p>`;
+        }
+    }
+
+    async function sendInvite(friendId, btn) {
+        if (!_roomId) return;
+        btn.disabled     = true;
+        btn.textContent  = 'Odesílám…';
+        try {
+            const res  = await fetch('/matchmaking/invite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ friendId, roomId: _roomId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                btn.textContent             = 'Pozváno ✓';
+                btn.style.background        = '#8d8638';
+            } else {
+                btn.textContent  = 'Chyba';
+                btn.disabled     = false;
+            }
+        } catch (err) {
+            btn.textContent = 'Chyba';
+            btn.disabled    = false;
+        }
+    }
 </script>
 
 <%- include('../partials/footer') %>
