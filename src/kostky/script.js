@@ -137,7 +137,7 @@ function getViewProjectionMatrix() {
   const proj = mat4.create();
   mat4.perspective(proj, fov, aspect, 0.1, 100.0);
   const view = mat4.create();
-  mat4.lookAt(view, [0, 12, 3], [0, -3, -13], [0, 1, 0]);
+  mat4.lookAt(view, [0, 12, 4], [0, -3, -13], [0, 1, 0]);
   const vp = mat4.create();
   mat4.multiply(vp, proj, view);
   return vp;
