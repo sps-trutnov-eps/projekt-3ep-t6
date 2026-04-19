@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title || 'Dice game' %></title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=MedievalSharp&display=swap" rel="stylesheet">
     <% if (user) { %>
@@ -14,7 +15,7 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-logo">
-                <a href="/">🎲 Dice Game</a>
+                <a href="/">Dice Game</a>
             </div>
             <ul class="nav-menu">
                 <li><a href="/">Domů</a></li>
@@ -40,7 +41,6 @@
                 <% } %>
                 <li><a href="/matchmaking">Matchmaking</a></li>
                 <li><a href="/stats">Statistiky</a></li>
-                <li><a href="/game/singleplayer">Kostky</a></li>
                 <% if (user) { %>
                 <li>
                     <form method="post" action="/auth/logout" style="margin: 0; padding: 0; display: flex; align-items: center;">

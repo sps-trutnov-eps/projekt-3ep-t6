@@ -117,9 +117,9 @@ function updateGameState(gameState) {
 function showFinished(gameState) {
     const banner = document.querySelector('.finished-banner p');
     if (gameState.winner_id === null && gameState.p2_score >= gameState.target_score) {
-        banner.textContent = '💀 Prohráli jste! Stařec byl lepší.';
+        banner.textContent = 'Prohráli jste! Stařec byl lepší.';
     } else if (gameState.winner_id == document.getElementById('player-id').textContent) {
-        banner.textContent = '🏆 Vyhráli jste! Gratulujeme!';
+        banner.textContent = 'Vyhráli jste! Gratulujeme!';
     }
     
     document.getElementById('game-finished').style.display = 'block';
@@ -345,15 +345,15 @@ async function executeNpcTurn() {
             
             if (data.npcBust) {
                 document.getElementById('bust-msg').style.display = 'block';
-                document.getElementById('bust-msg').textContent = '💀 Chudý starec hodil Farkle! (0 bodů)';
+                document.getElementById('bust-msg').textContent = 'Chudý starec hodil Farkle! (0 bodů)';
             } else {
                 document.getElementById('bust-msg').style.display = 'block';
-                document.getElementById('bust-msg').textContent = `🤖 Chudý starec bankoval ${data.npcScore} bodů!`;
+                document.getElementById('bust-msg').textContent = `Chudý starec bankoval ${data.npcScore} bodů!`;
             }
 
             setTimeout(() => {
                 document.getElementById('bust-msg').style.display = 'none';
-                document.getElementById('bust-msg').textContent = '💀 Farkle! Přišel jsi o body v tomto kole.';
+                document.getElementById('bust-msg').textContent = 'Farkle! Přišel jsi o body v tomto kole.';
                 if (window.diceRenderer) window.diceRenderer.hideLabels();
                 
                 if (data.gameState.status !== 'FINISHED') {
