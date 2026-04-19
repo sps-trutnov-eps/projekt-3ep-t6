@@ -26,6 +26,10 @@ const SETTLE_ANG_VEL = 0.3;
 // Axis index → dice face number
 const AXIS_TO_FACE = [6, 5, 2, 4, 1, 3];
 
+// Reverse: face number → axis index  (FACE_TO_AXIS[face] = axisIdx)
+const FACE_TO_AXIS = [];
+for (let i = 0; i < AXIS_TO_FACE.length; i++) FACE_TO_AXIS[AXIS_TO_FACE[i]] = i;
+
 // --- World setup ---
 const world = new CANNON.World({
   gravity: new CANNON.Vec3(0, -9.81, 0),
@@ -117,6 +121,32 @@ function nearestFaceQuat(q) {
   }
 
   const current = q.vmult(bestLocal);
+  const cross = new CANNON.Vec3();
+  current.cross(WORLD_UP, cross);
+  const crossLen = cross.length();
+
+  if (crossLen < 1e-6) return q.clone();
+
+  const dot = current.dot(WORLD_UP);
+  const angle = Math.atan2(crossLen, dot);
+  cross.scale(1 / crossLen, cross);
+
+  const correction = new CANNON.Quaternion();
+  correction.setFromAxisAngle(cross, angle);
+  const result = correction.mult(q);
+  result.normalize();
+  return result;
+}
+
+// --- Target values for server-authoritative rolls ---
+let targetValues = null;  // null = free physics, array = snap to these faces
+
+function targetFaceQuat(q, faceNumber) {
+  const axisIdx = FACE_TO_AXIS[faceNumber];
+  if (axisIdx === undefined) return nearestFaceQuat(q);
+  const targetLocal = LOCAL_AXES[axisIdx];
+
+  const current = q.vmult(targetLocal);
   const cross = new CANNON.Vec3();
   current.cross(WORLD_UP, cross);
   const crossLen = cross.length();
@@ -266,8 +296,9 @@ function loop(dt) {
 
   world.step(1 / 60, dt, 5);
 
-  // Post-step: snap nearly-still dice to nearest face
-  for (const d of dice) {
+  // Post-step: snap nearly-still dice to nearest face (or target face)
+  for (let di = 0; di < dice.length; di++) {
+    const d = dice[di];
     if (d.settled) continue;
     const b = d.body;
     if (b.type === CANNON.Body.STATIC) continue;
@@ -276,7 +307,9 @@ function loop(dt) {
     const angSpeed = b.angularVelocity.length();
 
     if (speed < SETTLE_VEL && angSpeed < SETTLE_ANG_VEL) {
-      const target = nearestFaceQuat(b.quaternion);
+      const target = (targetValues && targetValues[di] !== undefined)
+        ? targetFaceQuat(b.quaternion, targetValues[di])
+        : nearestFaceQuat(b.quaternion);
       b.quaternion.x += (target.x - b.quaternion.x) * 0.15;
       b.quaternion.y += (target.y - b.quaternion.y) * 0.15;
       b.quaternion.z += (target.z - b.quaternion.z) * 0.15;
@@ -313,6 +346,24 @@ function loop(dt) {
   }));
 }
 
+function rollToValues(values, side) {
+  targetValues = values;
+  const count = values.length;
+  if (!bodiesCreated) createBodies();
+  const indices = [];
+  for (let i = 0; i < count; i++) indices.push(i);
+  for (const d of dice) {
+    d.body.type = CANNON.Body.DYNAMIC;
+    d.body.mass = MASS;
+    d.body.updateMassProperties();
+  }
+  rollDice(indices, side);
+}
+
+function clearTargetValues() {
+  targetValues = null;
+}
+
 function hideDice(indices) {
   if (!bodiesCreated) return;
   for (const i of indices) {
@@ -327,4 +378,4 @@ function hideDice(indices) {
   }
 }
 
-export { loop, dice, rollAllDice, rollDice, getDiceValues, allSettled, NUM_DICE, setSeed, hideDice };
+export { loop, dice, rollAllDice, rollDice, rollToValues, clearTargetValues, getDiceValues, allSettled, NUM_DICE, setSeed, hideDice };

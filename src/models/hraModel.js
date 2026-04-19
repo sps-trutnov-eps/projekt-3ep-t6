@@ -112,11 +112,11 @@ class Game {
             SET turn_score = 0,
                 dice_left = 6,
                 current_turn_id = $2,
-                last_roll = $3
+                last_roll = '[]'
             WHERE id = $1
             RETURNING *;
         `;
-        const { rows } = await db.query(sql, [gameId, nextPlayerId, JSON.stringify(rollValues)]);
+        const { rows } = await db.query(sql, [gameId, nextPlayerId]);
         return rows[0];
     }
 

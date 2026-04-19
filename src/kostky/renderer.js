@@ -6,7 +6,7 @@
 */
 import { initBuffers, initTableBuffers, initFrameBuffers } from "/kostky/init-buffers.js";
 import { drawScene } from "/kostky/draw.js";
-import { loop, rollAllDice, rollDice, getDiceValues, allSettled, NUM_DICE, setSeed, hideDice } from "/kostky/physics.js";
+import { loop, rollAllDice, rollDice, rollToValues as physicsRollToValues, clearTargetValues, getDiceValues, allSettled, NUM_DICE, setSeed, hideDice } from "/kostky/physics.js";
 
 const { mat4 } = window;
 
@@ -122,6 +122,47 @@ gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 const texture = loadTexture(gl, "/kostky/cubetexture.png");
 const tableTexture = loadTexture(gl, "/kostky/WoodTexture.jpg");
 
+// Programmatic wild die texture — each face a different color
+function createWildTexture(gl) {
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  // Texture atlas layout matches cubetexture.png: 4 columns × 3 rows
+  canvas.width = size * 4;
+  canvas.height = size * 3;
+  const ctx = canvas.getContext('2d');
+
+  // Face colors — vibrant rainbow for the wild die
+  // Layout: row0=[front,back,top,bottom], row1=[right,left,_,_] — but actual UV mapping:
+  // Front(col0,row1), Back(col2,row1), Top(col1,row1), Bottom(col3,row1),
+  // Right(col1,row0), Left(col1,row2)
+  const faceColors = [
+    { col: 0, row: 1, color: '#e74c3c' },  // Front — red
+    { col: 2, row: 1, color: '#3498db' },  // Back — blue
+    { col: 1, row: 1, color: '#2ecc71' },  // Top — green
+    { col: 3, row: 1, color: '#f39c12' },  // Bottom — orange
+    { col: 1, row: 0, color: '#9b59b6' },  // Right — purple
+    { col: 1, row: 2, color: '#e91e63' },  // Left — pink
+  ];
+
+  for (const f of faceColors) {
+    ctx.fillStyle = f.color;
+    ctx.fillRect(f.col * size, f.row * size, size, size);
+    // Add a "?" in center
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${size * 0.6}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('?', f.col * size + size / 2, f.row * size + size / 2);
+  }
+
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
+  gl.generateMipmap(gl.TEXTURE_2D);
+  return tex;
+}
+const wildTexture = createWildTexture(gl);
+
 // --- 3D → 2D projection for labels ---
 function getViewProjectionMatrix() {
   const fov = (45 * Math.PI) / 180;
@@ -153,6 +194,7 @@ let shownValues = [];        // values to display on labels (set by host page)
 let selectedSet = new Set();  // indices currently selected
 let selectable = false;       // whether hovering/clicking selects
 let onSelectCallback = null;  // called with (index, selectedSet) on toggle
+let wildDiceSet = new Set();  // indices of wild dice (value 0 from server)
 
 diceLabels.forEach(label => {
   label.addEventListener('click', () => {
@@ -178,9 +220,11 @@ function updateLabels() {
     if (!screen) { label.classList.remove('visible'); continue; }
     label.style.left = screen.x + 'px';
     label.style.top = screen.y + 'px';
-    label.querySelector('.dice-value').textContent = shownValues[i];
+    const isWild = wildDiceSet.has(i);
+    label.querySelector('.dice-value').textContent = isWild ? '?' : shownValues[i];
     label.classList.add('visible');
     label.classList.toggle('selected', selectedSet.has(i));
+    label.classList.toggle('wild', isWild);
   }
 }
 
@@ -207,7 +251,8 @@ function render(now) {
 
   for (let i = 0; i < diceState.length; i++) {
     if (hiddenDiceSet.has(i)) continue;
-    drawScene(gl, programInfo, buffers, texture, diceState[i].quat, diceState[i].pos);
+    const tex = wildDiceSet.has(i) ? wildTexture : texture;
+    drawScene(gl, programInfo, buffers, tex, diceState[i].quat, diceState[i].pos);
   }
 
   drawScene(gl, programInfo, tableBuffers, tableTexture, [0, 0, 0], [0, -4, 0]);
@@ -246,11 +291,32 @@ window.diceRenderer = {
     selectable = false;
     selectedSet.clear();
     shownValues = [];
+    wildDiceSet.clear();
     for (const l of diceLabels) l.classList.remove('visible');
+    clearTargetValues();
     const indices = [];
     for (let i = 0; i < c; i++) indices.push(i);
     if (indices.length === 6) rollAllDice(side);
     else rollDice(indices, side);
+  },
+  // Roll dice that will land on specific values (server-authoritative)
+  rollToValues(values, side = 'near') {
+    hiddenDiceSet.clear();
+    for (let i = values.length; i < NUM_DICE; i++) hiddenDiceSet.add(i);
+    selectable = false;
+    selectedSet.clear();
+    shownValues = [];
+    wildDiceSet.clear();
+    for (const l of diceLabels) l.classList.remove('visible');
+    // Mark wild dice (value 0) — physics rolls them as normal face values
+    const physicsValues = values.map((v, i) => {
+      if (v === 0) {
+        wildDiceSet.add(i);
+        return Math.floor(Math.random() * 6) + 1; // random visual face for wild
+      }
+      return v;
+    });
+    physicsRollToValues(physicsValues, side);
   },
   onSettle(cb) {
     settleCallback = cb;
@@ -266,7 +332,10 @@ window.diceRenderer = {
     selectable = false;
     shownValues = [];
     selectedSet.clear();
-    for (const l of diceLabels) l.classList.remove('visible');
+    for (const l of diceLabels) {
+      l.classList.remove('visible');
+      l.classList.remove('wild');
+    }
   },
   // Get currently selected indices
   getSelected() {
@@ -281,5 +350,11 @@ window.diceRenderer = {
   },
   getValues() {
     return getDiceValues();
+  },
+  isWild(index) {
+    return wildDiceSet.has(index);
+  },
+  getWildIndices() {
+    return [...wildDiceSet];
   },
 };

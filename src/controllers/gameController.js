@@ -349,10 +349,10 @@ exports.postMultiplayerRoll = async (req, res) => {
         if (points === 0) {
             const nextPlayer = isPlayer1 ? game.player2_id : game.player1_id;
             const updated = await gameModel.bust(game.id, nextPlayer, roll);
-            return res.json({ success: true, bust: true, gameState: updated });
+            return res.json({ success: true, bust: true, gameState: updated, roll: roll });
         }
 
-        const updated = await gameModel.saveRoll(game.id, roll);
+        const updated = await gameModel.saveRoll(game.id, roll, seed);
         res.json({ success: true, bust: false, gameState: updated });
     } catch (err) {
         console.error('postMultiplayerRoll error:', err);
@@ -374,18 +374,35 @@ exports.postMultiplayerSelect = async (req, res) => {
         if (game.current_turn_id !== req.session.user.id) return res.status(403).json({ error: 'Není tvůj tah' });
 
         const lastRoll = Array.isArray(game.last_roll) ? game.last_roll : JSON.parse(game.last_roll ?? '[]');
-        const rollCopy = [...lastRoll];
-        for (const die of selectedDice) {
-            const idx = rollCopy.indexOf(die);
-            if (idx === -1) return res.status(400).json({ error: 'Vybrané kostky neodpovídají hozeným' });
-            rollCopy.splice(idx, 1);
+        
+        // Validation: Every selected die must exist in lastRoll at the specified index with the specified original value
+        const effectiveDice = [];
+        for (const selection of selectedDice) {
+            const { idx, val, mappedTo } = selection;
+            
+            if (idx < 0 || idx >= lastRoll.length || lastRoll[idx] !== val) {
+                return res.status(400).json({ error: 'Neplatný výběr kostek' });
+            }
+            
+            // If it's a wild die (val 0), mappedTo must be 1-6. If it's a normal die, mappedTo must equal val.
+            if (val === 0) {
+                if (![1, 2, 3, 4, 5, 6].includes(mappedTo)) {
+                    return res.status(400).json({ error: 'Neplatná hodnota pro divokou kostku' });
+                }
+            } else {
+                if (mappedTo !== val) {
+                    return res.status(400).json({ error: 'Hodnota kostky nemůže být změněna' });
+                }
+            }
+            effectiveDice.push(mappedTo);
         }
 
-        if (!scoreEngine.isSelectionValid(selectedDice)) {
+        // Validace výběru s použitím namapovaných hodnot
+        if (!scoreEngine.isSelectionValid(effectiveDice)) {
             return res.status(400).json({ error: 'Některé z vybraných kostek nepřispívají ke skóre!' });
         }
 
-        const points = scoreEngine.checkCurrentScore(selectedDice);
+        const points = scoreEngine.checkCurrentScore(effectiveDice);
         if (points === 0) return res.status(400).json({ error: 'Vybraná kombinace nemá žádné body' });
 
         const diceRemaining = game.dice_left - selectedDice.length;
