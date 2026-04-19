@@ -34,6 +34,8 @@ class Game {
         `ALTER TABLE games ADD COLUMN IF NOT EXISTS last_roll JSONB DEFAULT '[]'`,
         'ALTER TABLE games ADD COLUMN IF NOT EXISTS last_seed INTEGER DEFAULT 10000',
         'ALTER TABLE games ADD COLUMN IF NOT EXISTS target_score INTEGER DEFAULT 3000',
+        'ALTER TABLE games ADD COLUMN IF NOT EXISTS p1_wild_used BOOLEAN DEFAULT FALSE',
+        'ALTER TABLE games ADD COLUMN IF NOT EXISTS p2_wild_used BOOLEAN DEFAULT FALSE',
       ];
 
       for (const sql of migrations) {
@@ -186,6 +188,16 @@ class Game {
             RETURNING *;
         `;
         const { rows } = await db.query(sql, [gameId, points]);
+        return rows[0];
+    }
+
+    /**
+     * Mark wild dice as used for a specific player in a game
+     */
+    static async markWildUsed(gameId, isPlayer1) {
+        const column = isPlayer1 ? 'p1_wild_used' : 'p2_wild_used';
+        const sql = `UPDATE games SET ${column} = TRUE WHERE id = $1 RETURNING *`;
+        const { rows } = await db.query(sql, [gameId]);
         return rows[0];
     }
 }

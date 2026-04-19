@@ -1,6 +1,7 @@
 exports.index = (req, res) => {
   res.render('home/index', {
-    title: 'Dice Game',
+    title: 'Farkle',
+    message: 'Farkle'
   });
 };
 
