@@ -263,7 +263,7 @@ exports.postMultiplayerRoll = async (req, res) => {
         if (points === 0) {
             const nextPlayer = isPlayer1 ? game.player2_id : game.player1_id;
             const updated = await gameModel.bust(game.id, nextPlayer, roll);
-            return res.json({ success: true, bust: true, gameState: updated });
+            return res.json({ success: true, bust: true, gameState: updated, roll: roll });
         }
 
         const updated = await gameModel.saveRoll(game.id, roll);

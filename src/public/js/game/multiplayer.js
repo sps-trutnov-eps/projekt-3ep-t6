@@ -313,6 +313,7 @@ async function rollDice(useWild = false) {
             showBust();
             gameState = data.gameState;
             renderState(gameState);
+            if (data.roll) renderDicePassive(data.roll);
             return;
         }
 
