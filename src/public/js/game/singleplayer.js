@@ -49,9 +49,14 @@ function isSelectionValid(chosenDice) {
     let diceLeft = [0, 0, 0, 0, 0, 0];
     for (let die of chosenDice) diceLeft[die - 1]++;
 
-    if (diceLeft.every(c => c >= 1)) return true;
-    if (diceLeft.slice(1).every(c => c >= 1) && chosenDice.length === 5) return true;
-    if (diceLeft.slice(0, 5).every(c => c >= 1) && chosenDice.length === 5) return true;
+    // 1. Postupky (odečteme je, pokud existují)
+    if (diceLeft.every(c => c >= 1)) {
+        for (let i = 0; i < 6; i++) diceLeft[i]--;
+    } else if (diceLeft.slice(1).every(c => c >= 1)) {
+        for (let i = 1; i < 6; i++) diceLeft[i]--;
+    } else if (diceLeft.slice(0, 5).every(c => c >= 1)) {
+        for (let i = 0; i < 5; i++) diceLeft[i]--;
+    }
 
     for (let i = 0; i < 6; i++) {
         if (diceLeft[i] >= 3) diceLeft[i] = 0;

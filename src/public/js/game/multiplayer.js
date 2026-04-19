@@ -16,7 +16,7 @@ function startPolling() {
     if (pollInterval) return;
     pollInterval = setInterval(async () => {
         await fetchState();
-    }, 2500);
+    }, 1000);
 }
 
 function stopPolling() {
@@ -72,6 +72,7 @@ function renderState(g) {
 
     // Výsledek hry
     if (g.status === 'FINISHED') {
+        stopPolling();
         const won = g.winner_id === MY_ID;
         document.getElementById('finished-text').innerHTML = won
             ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#b4901e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -87,6 +88,9 @@ function renderState(g) {
                 <line x1="9" y1="9" x2="15" y2="15"/>
             </svg>
             Prohráli jste.`;
+        document.getElementById('game-finished').style.display = 'block';
+        document.querySelector('.game-layout').style.display = 'none';
+        return;
     }
 
     // Přepnutí polling / aktivní UI
@@ -103,7 +107,7 @@ function renderState(g) {
 
     // Je můj tah
     stopPolling();
-waitingForOther = false;
+    waitingForOther = false;
 
 const lastRoll = Array.isArray(g.last_roll) ? g.last_roll : JSON.parse(g.last_roll ?? '[]');
 
@@ -251,9 +255,14 @@ function isSelectionValid(chosenDice) {
     let diceLeft = [0, 0, 0, 0, 0, 0];
     for (let die of chosenDice) diceLeft[die - 1]++;
 
-    if (diceLeft.every(c => c >= 1)) return true;
-    if (diceLeft.slice(1).every(c => c >= 1) && chosenDice.length === 5) return true;
-    if (diceLeft.slice(0, 5).every(c => c >= 1) && chosenDice.length === 5) return true;
+    // 1. Postupky (odečteme je, pokud existují)
+    if (diceLeft.every(c => c >= 1)) {
+        for (let i = 0; i < 6; i++) diceLeft[i]--;
+    } else if (diceLeft.slice(1).every(c => c >= 1)) {
+        for (let i = 1; i < 6; i++) diceLeft[i]--;
+    } else if (diceLeft.slice(0, 5).every(c => c >= 1)) {
+        for (let i = 0; i < 5; i++) diceLeft[i]--;
+    }
 
     for (let i = 0; i < 6; i++) {
         if (diceLeft[i] >= 3) diceLeft[i] = 0;
@@ -265,9 +274,13 @@ function isSelectionValid(chosenDice) {
 }
 
 // akce 
-async function rollDice() {
+async function rollDice(useWild = false) {
     try {
-        const res  = await fetch(`/game/multiplayer/${GAME_ID}/roll`, { method: 'POST' });
+        const res  = await fetch(`/game/multiplayer/${GAME_ID}/roll`, { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ useWild })
+        });
         const data = await res.json();
         if (!data.success) return alert(data.error);
 
@@ -345,19 +358,32 @@ async function bankPoints() {
     }
 }
 
-// UI helpers
-function showButtonsBeforeRoll() {
+async function showButtonsBeforeRoll() {
     document.getElementById('btn-roll').style.display    = 'block';
     document.getElementById('btn-confirm').style.display = 'none';
     document.getElementById('btn-reroll').style.display  = 'none';
     document.getElementById('btn-bank').style.display    = 'none';
+
+    // Wild dice logic
+    const btnWild = document.getElementById('btn-wild');
+    if (btnWild && gameState) {
+        const isPlayer1 = gameState.player1_id === MY_ID;
+        const wildUsed = isPlayer1 ? gameState.p1_wild_used : gameState.p2_wild_used;
+        
+        if (!wildUsed && gameState.user_streak >= 3) {
+            btnWild.style.display = 'block';
+        } else {
+            btnWild.style.display = 'none';
+        }
+    }
 }
 
 function showButtonsAfterRoll() {
     document.getElementById('btn-roll').style.display    = 'none';
+    document.getElementById('btn-wild').style.display    = 'none';
     document.getElementById('btn-confirm').style.display = 'block';
     document.getElementById('btn-reroll').style.display  = 'none';
-    document.getElementById('btn-bank').style.display    = gameState?.turn_score > 0 ? 'block' : 'none';
+    document.getElementById('btn-bank').style.display    = 'none';
 }
 
 function setButtonsWaiting() {

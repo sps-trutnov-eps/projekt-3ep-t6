@@ -8,10 +8,17 @@ function mulberry32(seed) {
   };
 }
 
-function rollDice(seed, count) {
+function rollDice(seed, count, includeWild = false) {
   const rng = mulberry32(seed);
   const results = [];
-  for (let i = 0; i < count; i++) {
+  
+  let diceToRoll = count;
+  if (includeWild && count > 0) {
+    results.push(0); // 0 representuje Wild Dice
+    diceToRoll--;
+  }
+
+  for (let i = 0; i < diceToRoll; i++) {
     results.push(Math.floor(rng() * 6) + 1);
   }
   return results;

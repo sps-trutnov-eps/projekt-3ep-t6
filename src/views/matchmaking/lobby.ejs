@@ -57,7 +57,6 @@
             </div>
             <div class="panel-body">
 
-                <!-- Krok 1: tlačítko pro vytvoření -->
                 <div id="create-initial">
                     <div style="margin-bottom: 1.5rem; text-align: center;">
                         <label for="create-target-score" class="panel-label">Cílové skóre:</label>
@@ -71,7 +70,6 @@
                     </div>
                 </div>
 
-                <!-- Krok 2: místnost vytvořena, čekání na hráče -->
                 <div id="create-result" style="display:none;">
                     <p class="panel-label">Kód místnosti:</p>
                     <div class="room-code-display">
@@ -91,22 +89,25 @@
                     </label>
                     <p class="panel-hint">Místnost je <strong id="visibility-status">privátní</strong></p>
 
-                    <!-- Stav čekání -->
                     <div id="waiting-status" style="margin-top:1.5rem; padding:1rem; background:#e8ddd0; text-align:center;">
-                        <p id="waiting-text">⏳ Čekám na druhého hráče…</p>
+                        <p id="waiting-text" style="display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7a665d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            Čekám na druhého hráče…
+                        </p>
                     </div>
 
-                    <!-- Tlačítko spustit hru — skryté dokud se nepřipojí druhý -->
                     <button
                         id="btn-start-game"
                         class="btn-primary"
                         style="display:none; margin-top:1rem; width:100%;"
                         onclick="startGame()"
                     >
-                        ▶ Spustit hru
+                        Spustit hru
                     </button>
 
-                    <!-- Pozvat přátele -->
                     <div style="margin-top:1.5rem; border-top:1px solid #c8bdb0; padding-top:1rem;">
                         <p class="panel-label">Pozvat přátele:</p>
                         <div id="friends-list-invite">
@@ -157,10 +158,6 @@
 </div>
 
 <style>
-    .friends-list-mini {
-        max-height: 200px;
-        overflow-y: auto;
-    }
     .friend-invite-item {
         display: flex;
         justify-content: space-between;
@@ -184,12 +181,13 @@
 </style>
 
 <script>
-    // ── state ──────────────────────────────────────────────
-    let _roomId   = null;
-    let _roomCode = null;
+    const WAITING_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7a665d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+    const READY_SVG   = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8d8638" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+    let _roomId       = null;
+    let _roomCode     = null;
     let _pollInterval = null;
 
-    // ── panely ─────────────────────────────────────────────
     function showPanel(type) {
         closePanel(false);
         const el = document.getElementById('panel-' + type);
@@ -211,27 +209,28 @@
     }
 
     function resetCreatePanel() {
-        _roomId = null;
+        _roomId   = null;
         _roomCode = null;
         document.getElementById('create-initial').style.display = 'block';
         document.getElementById('create-loading').style.display = 'none';
         document.getElementById('create-result').style.display  = 'none';
         document.getElementById('btn-do-create').style.display  = 'block';
         document.getElementById('btn-start-game').style.display = 'none';
-        document.getElementById('waiting-text').textContent = '⏳ Čekám na druhého hráče…';
+        document.getElementById('waiting-status').style.background = '#e8ddd0';
+        document.getElementById('waiting-text').style.color = '#7a665d';
+        document.getElementById('waiting-text').innerHTML = `${WAITING_SVG} Čekám na druhého hráče…`;
         const tog = document.getElementById('toggle-public');
         if (tog) tog.checked = false;
         document.getElementById('visibility-status').textContent = 'privátní';
     }
 
-    // ── vytvoření místnosti ────────────────────────────────
     async function createRoom() {
         const targetScore = document.getElementById('create-target-score').value;
         document.getElementById('btn-do-create').style.display  = 'none';
         document.getElementById('create-loading').style.display = 'block';
 
         try {
-            const res  = await fetch('/matchmaking/create', { 
+            const res  = await fetch('/matchmaking/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ targetScore })
@@ -247,10 +246,10 @@
             _roomId   = data.room.id;
             _roomCode = data.room.code;
 
-            document.getElementById('room-code-text').textContent     = _roomCode;
-            document.getElementById('create-loading').style.display   = 'none';
-            document.getElementById('create-initial').style.display   = 'none';
-            document.getElementById('create-result').style.display    = 'block';
+            document.getElementById('room-code-text').textContent   = _roomCode;
+            document.getElementById('create-loading').style.display = 'none';
+            document.getElementById('create-initial').style.display = 'none';
+            document.getElementById('create-result').style.display  = 'block';
 
             loadFriendsForInvite();
             startPolling();
@@ -260,10 +259,9 @@
         }
     }
 
-    // ── polling stavu místnosti (pro tvůrce) ───────────────
     function startPolling() {
         stopPolling();
-        _pollInterval = setInterval(pollRoomStatus, 2500);
+        _pollInterval = setInterval(pollRoomStatus, 1000);
     }
 
     function stopPolling() {
@@ -282,12 +280,12 @@
 
             if (data.status === 'READY') {
                 stopPolling();
-                document.getElementById('waiting-text').textContent    = '✅ Hráč se připojil! Můžeš spustit hru.';
                 document.getElementById('waiting-status').style.background = '#d4edda';
+                document.getElementById('waiting-text').style.color = '#8d8638';
+                document.getElementById('waiting-text').innerHTML = `${READY_SVG} Hráč se připojil! Můžeš spustit hru.`;
                 document.getElementById('btn-start-game').style.display = 'block';
             }
 
-            // Pokud tvůrce klikl Start a hra už běží (race condition)
             if (data.status === 'IN_GAME' && data.gameId) {
                 stopPolling();
                 window.location.href = `/game/multiplayer/${data.gameId}`;
@@ -297,7 +295,6 @@
         }
     }
 
-    // ── spustit hru (tvůrce) ──────────────────────────────
     async function startGame() {
         try {
             const res  = await fetch('/matchmaking/start', {
@@ -306,19 +303,16 @@
                 body: JSON.stringify({ roomId: _roomId })
             });
             const data = await res.json();
-
             if (!data.success) {
                 alert(data.error || 'Chyba při spouštění hry');
                 return;
             }
-
             window.location.href = `/game/multiplayer/${data.gameId}`;
         } catch (err) {
             alert('Chyba spojení se serverem');
         }
     }
 
-    // ── viditelnost místnosti ──────────────────────────────
     async function toggleVisibility() {
         const isPublic = document.getElementById('toggle-public').checked;
         document.getElementById('visibility-status').textContent = isPublic ? 'veřejná' : 'privátní';
@@ -334,7 +328,6 @@
         }
     }
 
-    // ── kopírovat kód ──────────────────────────────────────
     function copyCode() {
         navigator.clipboard.writeText(_roomCode).then(() => {
             const btn = document.querySelector('.btn-copy');
@@ -345,7 +338,6 @@
         });
     }
 
-    // ── připojit se kódem ──────────────────────────────────
     async function joinRoom() {
         const code = document.getElementById('join-code-input').value.trim();
         document.getElementById('join-error').style.display = 'none';
@@ -365,7 +357,6 @@
                 return;
             }
 
-            // Úspěšně připojeni — přesměruj na čekací stránku
             window.location.href = `/matchmaking/waiting/${code}`;
         } catch (err) {
             document.getElementById('join-error').textContent   = 'Chyba spojení se serverem.';
@@ -373,7 +364,6 @@
         }
     }
 
-    // ── náhodná hra ────────────────────────────────────────
     async function findPublicRoom() {
         showPanel('random');
         try {
@@ -385,15 +375,12 @@
                 return;
             }
 
-            // Připojeni do veřejné místnosti
-            const code = data.room.invite_code;
-            window.location.href = `/matchmaking/waiting/${code}`;
+            window.location.href = `/matchmaking/waiting/${data.room.invite_code}`;
         } catch (err) {
             document.getElementById('random-status').textContent = 'Chyba spojení se serverem.';
         }
     }
 
-    // ── pozvat přátele ─────────────────────────────────────
     async function loadFriendsForInvite() {
         const list = document.getElementById('friends-list-invite');
         try {
@@ -422,8 +409,8 @@
 
     async function sendInvite(friendId, btn) {
         if (!_roomId) return;
-        btn.disabled     = true;
-        btn.textContent  = 'Odesílám…';
+        btn.disabled    = true;
+        btn.textContent = 'Odesílám…';
         try {
             const res  = await fetch('/matchmaking/invite', {
                 method: 'POST',
@@ -432,11 +419,11 @@
             });
             const data = await res.json();
             if (data.success) {
-                btn.textContent             = 'Pozváno ✓';
-                btn.style.background        = '#8d8638';
+                btn.textContent      = 'Pozváno';
+                btn.style.background = '#8d8638';
             } else {
-                btn.textContent  = 'Chyba';
-                btn.disabled     = false;
+                btn.textContent = 'Chyba';
+                btn.disabled    = false;
             }
         } catch (err) {
             btn.textContent = 'Chyba';

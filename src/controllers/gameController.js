@@ -2,6 +2,8 @@ const gameModel   = require('../models/hraModel');
 const roomModel   = require('../models/roomModel');
 const userModel   = require('../models/userModel');
 const scoreEngine = require('../shared/scoreEngine');
+const roller      = require('../shared/diceRoller');
+const db          = require('../db');
 
 exports.getSingleplayer = (req, res) => {
     res.render('game/singleplayer', {
@@ -65,7 +67,7 @@ exports.postThrowDice = async (req, res) => {
 
         if (pointsThisRoll === 0) {
             let updatedGame = await gameModel.bust(
-                gameState.id, gameState.player1_id, roll, gameState.last_seed
+                gameState.id, gameState.player1_id, roll
             );
             return res.json({ success: true, bust: true, gameState: updatedGame, bustRoll: roll });
         }
@@ -128,18 +130,6 @@ exports.postSelectDice = async (req, res) => {
         let updatedGame = await gameModel.updateTurn(
             gameState.id, points, nextDiceCount, []
         );
-
-        if (newTotal >= WIN_SCORE) {
-            await gameModel.bankPoints(gameState.id, gameState.player1_id, gameState.player1_id);
-            const finishedGame = await gameModel.finishGame(gameState.id, gameState.player1_id);
-            
-            // Statistika
-            if (gameState.game_mode === 'SINGLEPLAYER') {
-                await userModel.updateStats(gameState.player1_id, true);
-            }
-            
-            return res.json({ success: true, gameState: finishedGame });
-        }
 
         res.json({ success: true, gameState: updatedGame });
 
@@ -231,7 +221,7 @@ exports.postNpcTurn = async (req, res) => {
 
         let updatedGame;
         if (points === 0) {
-            updatedGame = await gameModel.bust(gameState.id, gameState.player1_id, roll, gameState.last_seed);
+            updatedGame = await gameModel.bust(gameState.id, gameState.player1_id, roll);
             return res.json({ success: true, npcRoll: roll, npcBust: true, npcScore: 0, gameState: updatedGame });
         } else {
             updatedGame = await gameModel.bankNpcPoints(gameState.id, points);
@@ -291,8 +281,6 @@ exports.postCheat = async (req, res) => {
 
 // --- Multiplayer endpoints ---
 
-const db = require('../db');
-
 exports.getMultiplayer = async (req, res) => {
     try {
         if (!req.session.user) return res.redirect('/auth/login');
@@ -320,7 +308,11 @@ exports.getMultiplayerState = async (req, res) => {
         if (!req.session.user) return res.status(401).json({ error: 'Nejsi přihlášen' });
         const game = await gameModel.findById(req.params.gameId);
         if (!game) return res.status(404).json({ error: 'Hra nenalezena' });
-        res.json(game);
+        
+        const user = await userModel.findById(req.session.user.id);
+        const state = { ...game, user_streak: user.win_streak };
+        
+        res.json(state);
     } catch (err) {
         console.error('getMultiplayerState error:', err);
         res.status(500).json({ error: 'Chyba serveru' });
@@ -330,16 +322,32 @@ exports.getMultiplayerState = async (req, res) => {
 exports.postMultiplayerRoll = async (req, res) => {
     try {
         if (!req.session.user) return res.status(401).json({ error: 'Nejsi přihlášen' });
+        const { useWild } = req.body || {};
         const game = await gameModel.findById(req.params.gameId);
         if (!game) return res.status(404).json({ error: 'Hra nenalezena' });
         if (game.status === 'FINISHED') return res.status(400).json({ error: 'Hra skončila' });
         if (game.current_turn_id !== req.session.user.id) return res.status(403).json({ error: 'Není tvůj tah' });
 
-        const roll = rollRandomDice(game.dice_left);
+        const isPlayer1 = game.player1_id === req.session.user.id;
+        const wildAlreadyUsed = isPlayer1 ? game.p1_wild_used : game.p2_wild_used;
+
+        let includeWild = false;
+        if (useWild) {
+            if (wildAlreadyUsed) return res.status(400).json({ error: 'Divoká kostka již byla v této hře použita' });
+
+            const user = await userModel.findById(req.session.user.id);
+            if (!user || user.win_streak < 3) return res.status(400).json({ error: 'Potřebuješ sérii 3 výher k použití divoké kostky' });
+
+            includeWild = true;
+            await gameModel.markWildUsed(game.id, isPlayer1);
+        }
+
+        const seed = Math.floor(Math.random() * 10000) + 1;
+        const roll = roller.rollDice(seed, game.dice_left, includeWild);
         const points = scoreEngine.checkCurrentScore(roll);
 
         if (points === 0) {
-            const nextPlayer = game.player1_id === req.session.user.id ? game.player2_id : game.player1_id;
+            const nextPlayer = isPlayer1 ? game.player2_id : game.player1_id;
             const updated = await gameModel.bust(game.id, nextPlayer, roll);
             return res.json({ success: true, bust: true, gameState: updated });
         }
@@ -355,7 +363,7 @@ exports.postMultiplayerRoll = async (req, res) => {
 exports.postMultiplayerSelect = async (req, res) => {
     try {
         if (!req.session.user) return res.status(401).json({ error: 'Nejsi přihlášen' });
-        const { selectedDice } = req.body;
+        const { selectedDice } = req.body || {};
         if (!Array.isArray(selectedDice) || selectedDice.length === 0) {
             return res.status(400).json({ error: 'Žádné kostky nevybrány' });
         }
@@ -389,20 +397,6 @@ exports.postMultiplayerSelect = async (req, res) => {
 
         const WIN_SCORE = game.target_score;
         let updated = await gameModel.updateTurn(game.id, points, nextDiceCount, []);
-
-        if (newTotal >= WIN_SCORE) {
-            await gameModel.bankPoints(game.id, req.session.user.id, req.session.user.id);
-            const finished = await gameModel.finishGame(game.id, req.session.user.id);
-
-            await userModel.updateStats(req.session.user.id, true);
-            const loserId = isPlayer1 ? game.player2_id : game.player1_id;
-            await userModel.updateStats(loserId, false);
-
-            const { rows } = await db.query('SELECT id FROM rooms WHERE game_id = $1', [game.id]);
-            if (rows.length > 0) await roomModel.finish(rows[0].id);
-
-            return res.json({ success: true, gameState: finished });
-        }
 
         res.json({ success: true, gameState: updated });
     } catch (err) {

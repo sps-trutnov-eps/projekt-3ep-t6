@@ -2,7 +2,7 @@ let _invPollInterval = null;
 
 function startInvitationPolling() {
     fetchNotifications();
-    _invPollInterval = setInterval(fetchNotifications, 10000);
+    _invPollInterval = setInterval(fetchNotifications, 5000);
 }
 
 async function fetchNotifications() {
