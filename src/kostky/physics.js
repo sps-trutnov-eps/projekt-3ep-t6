@@ -5,7 +5,7 @@
 // Exports a loop(dt) function that steps the simulation and returns
 // dice state (position + quaternion) for rendering.
 
-import * as CANNON from '/kostky/node_modules/cannon-es/dist/cannon-es.js';
+import * as CANNON from 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js';
 
 // --- Constants ---
 const NUM_DICE = 6;
