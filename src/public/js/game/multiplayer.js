@@ -75,6 +75,9 @@ function renderState(g) {
     const myScore   = isPlayer1 ? g.p1_score : g.p2_score;
     const oppScore  = isPlayer1 ? g.p2_score : g.p1_score;
 
+    const oppName = isPlayer1 ? g.p2_username : g.p1_username;
+    document.getElementById('opponent-name').textContent = oppName || '...';
+
     document.getElementById('player-score').textContent  = myScore;
     document.getElementById('opponent-score').textContent = oppScore;
     document.getElementById('target-score').textContent = g.target_score ?? 3000;

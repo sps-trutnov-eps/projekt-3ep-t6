@@ -58,10 +58,19 @@ class Game {
   }
 
     /**
-     * Najde hru podle ID
+     * Najde hru podle ID (včetně jmen hráčů)
      */
     static async findById(gameId) {
-        const { rows } = await db.query('SELECT * FROM games WHERE id = $1', [gameId]);
+        const sql = `
+            SELECT g.*, 
+                   u1.username as p1_username, 
+                   u2.username as p2_username
+            FROM games g
+            LEFT JOIN users u1 ON g.player1_id = u1.id
+            LEFT JOIN users u2 ON g.player2_id = u2.id
+            WHERE g.id = $1
+        `;
+        const { rows } = await db.query(sql, [gameId]);
         return rows[0];
     }
     // Uloží výsledek hodu a nový seed
