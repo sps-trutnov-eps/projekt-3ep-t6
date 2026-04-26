@@ -217,18 +217,18 @@
         <h1>Multiplayer</h1>
         <div class="game-meta">
             Proti: <span id="opponent-name">...</span>
-            &middot; Cil: <span id="target-score">3000</span>
+            &middot; Cíl: <span id="target-score">3000</span>
         </div>
     </div>
 
     <div id="game-finished" style="display: none;">
         <div class="finished-banner">
             <p id="finished-text" style="display:flex; align-items:center; gap:0.5rem; justify-content:center;">
-                Hra skoncila!
+                Hra skončila!
             </p>
         </div>
         <a href="/matchmaking/lobby">
-            <button class="btn-primary" style="margin-top:1rem;">Zpet do lobby</button>
+            <button class="btn-primary" style="margin-top:1rem;">Zpět do lobby</button>
         </a>
     </div>
 
@@ -247,7 +247,7 @@
                         <div class="dice-label" data-index="5"><span class="dice-value"></span></div>
                     </div>
                     <div id="wild-picker">
-                        <span class="wild-pick-label">Divoka kostka:</span>
+                        <span class="wild-pick-label">Divoká kostka:</span>
                         <button class="wild-pick-btn" data-val="1">1</button>
                         <button class="wild-pick-btn" data-val="2">2</button>
                         <button class="wild-pick-btn" data-val="3">3</button>
@@ -259,7 +259,7 @@
                 </div>
                 <div class="game-side-panel">
                     <div>
-                        <div class="score-label">Skore soupere</div>
+                        <div class="score-label">Skóre soupeře</div>
                         <div class="score-value" id="opponent-score">0</div>
                     </div>
                     <div>
@@ -267,11 +267,11 @@
                         <div class="score-value" id="turn-score">0</div>
                     </div>
                     <div id="selection-score-row" style="display:none;">
-                        <div class="score-label">Body za vyber</div>
+                        <div class="score-label">Body za výběr</div>
                         <div class="score-value" id="selection-score">0</div>
                     </div>
                     <div id="bust-msg" class="bust-message" style="display:none;">
-                        Farkle! Prisel jsi o body v tomto kole.
+                        Farkle! Přišel jsi o body v tomto kole.
                     </div>
                     <p style="display:flex; align-items:center; gap:0.4rem; margin-top:0.5rem;" id="turn-indicator"></p>
                 </div>
@@ -281,8 +281,8 @@
 
     <div id="action-area" class="game-actions">
         <button id="btn-roll"    class="btn-primary"   onclick="rollDice()">Hodit kostkami</button>
-        <button id="btn-wild"    class="btn-secondary" onclick="rollDice(true)" style="display:none; background: #8d8638;">Divoky hod</button>
-        <button id="btn-confirm" class="btn-primary"   onclick="confirmSelection()" style="display:none;" disabled>Potvrdit vyber</button>
+        <button id="btn-wild"    class="btn-secondary" onclick="rollDice(true)" style="display:none; background: #8d8638;">Divoký hod</button>
+        <button id="btn-confirm" class="btn-primary"   onclick="confirmSelection()" style="display:none;" disabled>Potvrdit výběr</button>
         <button id="btn-reroll"  class="btn-secondary" onclick="rerollDice()"       style="display:none;">Hodit znovu</button>
         <button id="btn-bank"    class="btn-secondary" onclick="bankPoints()"        style="display:none;">Bankovat</button>
     </div>
