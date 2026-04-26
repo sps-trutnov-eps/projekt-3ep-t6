@@ -82,6 +82,11 @@ button:active {
     transform: translateY(2px);
 }
 
+#btn-confirm {
+    padding: 14px 28px;
+    font-size: 1.15rem;
+}
+
 .btn-secondary {
     background: #8d8638;
     color: #f5efe8;

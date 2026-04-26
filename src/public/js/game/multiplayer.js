@@ -167,24 +167,29 @@ function renderState(g) {
 
 // --- 3D dice display ---
 
-function showDiceForSelection(roll) {
+function showDiceForSelection(roll, skipAnimation = false) {
     currentRoll = roll;
     selectedDice = [];
     hideWildPicker();
 
     if (!window.diceRenderer) return;
 
-    // Start 3D animation — dice land on server values
-    window.diceRenderer.rollToValues(roll, 'near');
-
     // Show values on labels (wild=0 shows as "?" via renderer)
     const displayValues = roll.map(v => v === 0 ? '?' : v);
 
-    // Wait for dice to settle before enabling selection
-    window.diceRenderer.onSettle(() => {
+    if (!skipAnimation) {
+        // Start 3D animation — dice land on server values
+        window.diceRenderer.rollToValues(roll, 'near');
+
+        // Wait for dice to settle before enabling selection
+        window.diceRenderer.onSettle(() => {
+            window.diceRenderer.showValues(displayValues);
+            setupSelectionHandler();
+        });
+    } else {
         window.diceRenderer.showValues(displayValues);
         setupSelectionHandler();
-    });
+    }
 
     updateSelectionScore();
 }
@@ -223,17 +228,7 @@ function setupSelectionHandler() {
     updateSelectionScore();
 }
 
-function animateRoll(roll, onDone) {
-    if (!window.diceRenderer) {
-        if (onDone) onDone();
-        return;
-    }
 
-    window.diceRenderer.rollToValues(roll, 'near');
-    window.diceRenderer.onSettle(() => {
-        if (onDone) onDone();
-    });
-}
 
 // --- Selection score ---
 function updateSelectionScore() {
@@ -298,26 +293,48 @@ function isSelectionValid(chosenDice) {
 
 // --- Actions ---
 async function rollDice(useWild = false) {
+    setButtonsWaiting();
+
+    const diceLeft = gameState && gameState.dice_left ? gameState.dice_left : 6;
+
+    if (window.diceRenderer) {
+        window.diceRenderer.roll(diceLeft);
+        window.diceRenderer.onSettle(async () => {
+            const physicsValues = window.diceRenderer.getValues().slice(0, diceLeft);
+            await executeServerRoll(physicsValues, useWild);
+        });
+    } else {
+        const fallback = [];
+        for (let i = 0; i < diceLeft; i++) fallback.push(Math.floor(Math.random() * 6) + 1);
+        await executeServerRoll(fallback, useWild);
+    }
+}
+
+async function executeServerRoll(diceValues, useWild) {
     try {
         const res  = await fetch(`/game/multiplayer/${GAME_ID}/roll`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ useWild })
+            body: JSON.stringify({ useWild, diceValues })
         });
         const data = await res.json();
-        if (!data.success) return alert(data.error);
+        
+        if (!data.success) {
+            alert(data.error);
+            renderState(gameState); // revert buttons
+            return;
+        }
 
         gameState = data.gameState;
 
         if (data.bust) {
-            // Bust roll is in data.roll (not in gameState.last_roll which is cleared)
-            const bustRoll = data.roll || [];
-            animateRoll(bustRoll, () => {
-                showBust();
-                setTimeout(() => {
-                    renderState(gameState);
-                }, 1000);
-            });
+            const bustRoll = data.roll || diceValues;
+            if (window.diceRenderer) window.diceRenderer.showValues(bustRoll);
+            showBust();
+            setTimeout(() => {
+                if (window.diceRenderer) window.diceRenderer.hideLabels();
+                renderState(gameState);
+            }, 1000);
             return;
         }
 
@@ -325,11 +342,11 @@ async function rollDice(useWild = false) {
             ? gameState.last_roll
             : JSON.parse(gameState.last_roll ?? '[]');
 
-        // Animate roll, then enable selection on settle
-        showDiceForSelection(roll);
+        showDiceForSelection(roll, true);
         showButtonsAfterRoll();
     } catch (err) {
-        console.error('rollDice error:', err);
+        console.error('executeServerRoll error:', err);
+        renderState(gameState);
     }
 }
 
