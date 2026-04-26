@@ -57,17 +57,6 @@
     image-rendering: pixelated; image-rendering: crisp-edges;
   }
 
-  #canvas-score-overlay {
-    position: absolute;
-    top: 12px; left: 14px;
-    color: #fff;
-    font-size: 1.3rem;
-    font-weight: bold;
-    text-shadow: 0 2px 6px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.6);
-    pointer-events: none;
-    z-index: 2;
-  }
-
   #dice-overlay {
     position: absolute; top: 0; left: 0; right: 0; bottom: 0;
     pointer-events: none; overflow: hidden;
@@ -99,43 +88,6 @@
   .dice-label.wild .dice-value {
     color: #e74c3c;
     text-shadow: 0 0 12px rgba(231,76,60,0.8), 0 0 4px rgba(0,0,0,0.9);
-  }
-
-  .game-side-panel {
-    position: absolute;
-    left: 100%;
-    top: 0;
-    margin-left: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    min-width: 150px;
-    padding: 1rem;
-    border-radius: 0;
-    border: 3px solid transparent;
-    border-image: linear-gradient(135deg, #7f3004, #cf763b, #b4901e, #cf763b, #7f3004) 1;
-    white-space: nowrap;
-  }
-  .game-side-panel .score-label {
-    font-size: 0.85rem;
-    color: #2c3e50;
-  }
-  .game-side-panel .score-value {
-    font-size: 1.4rem;
-    font-weight: bold;
-    color: #cf763b;
-  }
-  .game-side-panel .bust-message {
-    color: #7f3004;
-    font-weight: bold;
-    font-size: 1rem;
-    padding: 0.5rem 0;
-    animation: shake 0.4s ease;
-  }
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25%       { transform: translateX(-6px); }
-    75%       { transform: translateX(6px); }
   }
 
   .game-actions {
@@ -236,7 +188,28 @@
         <div class="game-middle">
             <div class="canvas-anchor">
                 <div id="dice-3d-wrap">
-                    <div id="canvas-score-overlay"><span id="player-score">0</span></div>
+                    <div id="canvas-user-score-overlay" style="position: absolute; top: 12px; left: 14px; color: #fff; font-size: 1.3rem; font-weight: bold; text-shadow: 0 2px 6px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.6); pointer-events: none; z-index: 2; display: flex; flex-direction: column; align-items: flex-start;">
+                        <span id="player-score">0</span>
+                        <div style="font-size: 1.1rem; color: #f0c040; margin-top: 4px; display: flex; align-items: center;">
+                            <span id="turn-score">0</span>
+                            <span id="selection-score-row" style="display:none; margin-left: 8px;">+ <span id="selection-score">0</span></span>
+                        </div>
+                    </div>
+
+                    <div id="canvas-center-overlay" style="position: absolute; top: 4px; left: 50%; transform: translateX(-50%); color: #fff; font-weight: bold; text-shadow: 0 2px 6px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.6); pointer-events: none; z-index: 2; display: flex; flex-direction: column; align-items: center;">
+                        <p id="turn-indicator" style="font-size: 1rem; margin: 0; display: none;"></p>
+                        <div id="bust-msg" style="display:none; font-size: 3rem; color: #ff4444; margin-top: 8px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase;">
+                            FARKLE!
+                        </div>
+                    </div>
+
+                    <div id="canvas-enemy-score-overlay" style="position: absolute; top: 12px; right: 14px; color: #fff; font-size: 1.3rem; font-weight: bold; text-shadow: 0 2px 6px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.6); pointer-events: none; z-index: 2; display: flex; flex-direction: column; align-items: flex-end;">
+                        <span id="opponent-score">0</span>
+                        <div id="enemy-turn-score-flash" style="font-size: 1.1rem; color: #f0c040; margin-top: 4px; opacity: 0; transition: opacity 0.3s; font-weight: bold;">
+                            + <span id="enemy-turn-score-value">0</span>
+                        </div>
+                    </div>
+
                     <canvas id="cnv" width="640" height="480"></canvas>
                     <div id="dice-overlay">
                         <div class="dice-label" data-index="0"><span class="dice-value"></span></div>
@@ -256,24 +229,6 @@
                         <button class="wild-pick-btn" data-val="6">6</button>
                         <button class="wild-pick-cancel" id="wild-pick-cancel">X</button>
                     </div>
-                </div>
-                <div class="game-side-panel">
-                    <div>
-                        <div class="score-label">Skóre soupeře</div>
-                        <div class="score-value" id="opponent-score">0</div>
-                    </div>
-                    <div>
-                        <div class="score-label">Body na stole</div>
-                        <div class="score-value" id="turn-score">0</div>
-                    </div>
-                    <div id="selection-score-row" style="display:none;">
-                        <div class="score-label">Body za výběr</div>
-                        <div class="score-value" id="selection-score">0</div>
-                    </div>
-                    <div id="bust-msg" class="bust-message" style="display:none;">
-                        Farkle! Přišel jsi o body v tomto kole.
-                    </div>
-                    <p style="display:flex; align-items:center; gap:0.4rem; margin-top:0.5rem;" id="turn-indicator"></p>
                 </div>
             </div>
         </div>

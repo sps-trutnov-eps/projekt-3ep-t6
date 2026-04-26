@@ -345,15 +345,20 @@ async function executeNpcTurn() {
             
             if (data.npcBust) {
                 document.getElementById('bust-msg').style.display = 'block';
-                document.getElementById('bust-msg').textContent = 'Chudý starec hodil Farkle! (0 bodů)';
             } else {
-                document.getElementById('bust-msg').style.display = 'block';
-                document.getElementById('bust-msg').textContent = `Chudý starec bankoval ${data.npcScore} bodů!`;
+                const flashWrap = document.getElementById('enemy-turn-score-flash');
+                const flashVal = document.getElementById('enemy-turn-score-value');
+                if (flashWrap && flashVal) {
+                    flashVal.textContent = data.npcScore;
+                    flashWrap.style.opacity = '1';
+                    setTimeout(() => {
+                        flashWrap.style.opacity = '0';
+                    }, 2000);
+                }
             }
 
             setTimeout(() => {
                 document.getElementById('bust-msg').style.display = 'none';
-                document.getElementById('bust-msg').textContent = 'Farkle! Přišel jsi o body v tomto kole.';
                 if (window.diceRenderer) window.diceRenderer.hideLabels();
                 
                 if (data.gameState.status !== 'FINISHED') {
