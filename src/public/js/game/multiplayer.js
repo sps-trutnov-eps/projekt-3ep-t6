@@ -255,7 +255,7 @@ function updateSelectionScore() {
     const span   = document.getElementById('selection-score');
 
     if (effectiveVals.length > 0) {
-        row.style.display  = 'block';
+        row.style.display  = 'inline';
         span.textContent   = points;
         span.style.color   = valid ? '#cf763b' : '#7f3004';
     } else {
@@ -441,6 +441,8 @@ function setButtonsWaiting() {
 
 function showBust() {
     document.getElementById('bust-msg').style.display = 'block';
+    document.getElementById('selection-score-row').style.display = 'none';
+    document.getElementById('selection-score').textContent = 0;
 }
 
 function hideBust() {

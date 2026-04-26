@@ -92,12 +92,18 @@ function updateSelectionScore() {
     const score  = chosen.length > 0 ? checkCurrentScore(chosen) : 0;
     const valid  = chosen.length > 0 ? isSelectionValid(chosen) : false;
 
-    document.getElementById('selection-score').textContent = score;
-    document.getElementById('btn-confirm').disabled = !valid;
-
-    // Vizuální zpětná vazba pro nevalidní výběr
+    const row = document.getElementById('selection-score-row');
     const span = document.getElementById('selection-score');
-    span.style.color = valid ? '#cf763b' : '#7f3004';
+
+    if (chosen.length > 0) {
+        row.style.display = 'inline';
+        span.textContent = score;
+        span.style.color = valid ? '#cf763b' : '#7f3004';
+    } else {
+        row.style.display = 'none';
+    }
+
+    document.getElementById('btn-confirm').disabled = !valid;
 }
 
 //  Aktualizace stavu hry
@@ -217,8 +223,8 @@ function enterSelectPhase() {
     document.getElementById('btn-reroll').style.display  = 'none';
     document.getElementById('btn-bank').style.display    = 'none';
     document.getElementById('btn-confirm').disabled      = true;
-    document.getElementById('selection-score-row').style.display = 'block';
     document.getElementById('bust-msg').style.display    = 'none';
+    updateSelectionScore();
 }
 
 async function confirmSelection() {
@@ -271,6 +277,8 @@ function enterPostConfirmPhase(diceLeft) {
     document.getElementById('btn-confirm').style.display = 'none';
     document.getElementById('btn-reroll').style.display  = 'inline-block';
     document.getElementById('btn-bank').style.display    = 'inline-block';
+    document.getElementById('selection-score-row').style.display = 'none';
+    document.getElementById('selection-score').textContent = 0;
 
     const d = diceLeft;
     document.getElementById('btn-reroll').textContent =
