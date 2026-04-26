@@ -322,7 +322,7 @@ exports.getMultiplayerState = async (req, res) => {
 exports.postMultiplayerRoll = async (req, res) => {
     try {
         if (!req.session.user) return res.status(401).json({ error: 'Nejsi přihlášen' });
-        const { useWild } = req.body || {};
+        const { useWild, diceValues } = req.body || {};
         const game = await gameModel.findById(req.params.gameId);
         if (!game) return res.status(404).json({ error: 'Hra nenalezena' });
         if (game.status === 'FINISHED') return res.status(400).json({ error: 'Hra skončila' });
@@ -331,19 +331,24 @@ exports.postMultiplayerRoll = async (req, res) => {
         const isPlayer1 = game.player1_id === req.session.user.id;
         const wildAlreadyUsed = isPlayer1 ? game.p1_wild_used : game.p2_wild_used;
 
-        let includeWild = false;
+        if (!Array.isArray(diceValues) || diceValues.length !== game.dice_left
+            || !diceValues.every(v => Number.isInteger(v) && v >= 1 && v <= 6)) {
+            return res.status(400).json({ error: 'Invalid dice values' });
+        }
+
+        const roll = [...diceValues];
+
         if (useWild) {
             if (wildAlreadyUsed) return res.status(400).json({ error: 'Divoká kostka již byla v této hře použita' });
 
             const user = await userModel.findById(req.session.user.id);
             if (!user || user.win_streak < 3) return res.status(400).json({ error: 'Potřebuješ sérii 3 výher k použití divoké kostky' });
 
-            includeWild = true;
             await gameModel.markWildUsed(game.id, isPlayer1);
+            roll[0] = 0; // Replace the first die with a wild die (value 0)
         }
 
-        const seed = Math.floor(Math.random() * 10000) + 1;
-        const roll = roller.rollDice(seed, game.dice_left, includeWild);
+        const seed = game.last_seed || Math.floor(Math.random() * 10000) + 1;
         const points = scoreEngine.checkCurrentScore(roll);
 
         if (points === 0) {
