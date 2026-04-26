@@ -75,6 +75,20 @@ function renderState(g) {
     const myScore   = isPlayer1 ? g.p1_score : g.p2_score;
     const oppScore  = isPlayer1 ? g.p2_score : g.p1_score;
 
+    if (window.previousOpponentScore !== undefined && window.previousOpponentScore !== null && oppScore > window.previousOpponentScore) {
+        const diff = oppScore - window.previousOpponentScore;
+        const flashWrap = document.getElementById('enemy-turn-score-flash');
+        const flashVal = document.getElementById('enemy-turn-score-value');
+        if (flashWrap && flashVal) {
+            flashVal.textContent = diff;
+            flashWrap.style.opacity = '1';
+            setTimeout(() => {
+                flashWrap.style.opacity = '0';
+            }, 2000);
+        }
+    }
+    window.previousOpponentScore = oppScore;
+
     const oppName = isPlayer1 ? g.p2_username : g.p1_username;
     document.getElementById('opponent-name').textContent = oppName || '...';
 
@@ -85,22 +99,15 @@ function renderState(g) {
 
     // Turn indicator
     const indicator = document.getElementById('turn-indicator');
+    indicator.style.display = 'block';
+    indicator.style.textAlign = 'center';
+    
     if (isMyTurn) {
-        indicator.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8d8638" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="2" width="20" height="20" rx="3"/>
-                <circle cx="12" cy="12" r="1.5" fill="#8d8638"/>
-            </svg>
-            Jsi na tahu`;
-        indicator.style.color = '#8d8638';
+        indicator.innerHTML = 'Jsi na tahu';
+        indicator.style.color = '#bbb';
     } else {
-        indicator.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7a665d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
-            </svg>
-            Cekam na soupere...`;
-        indicator.style.color = '#7a665d';
+        indicator.innerHTML = 'Čekám na soupeře...';
+        indicator.style.color = '#bbb';
     }
 
     // Game finished
@@ -237,7 +244,7 @@ function updateSelectionScore() {
     const span   = document.getElementById('selection-score');
 
     if (effectiveVals.length > 0) {
-        row.style.display  = 'block';
+        row.style.display  = 'inline';
         span.textContent   = points;
         span.style.color   = valid ? '#cf763b' : '#7f3004';
     } else {
@@ -309,7 +316,7 @@ async function rollDice(useWild = false) {
                 showBust();
                 setTimeout(() => {
                     renderState(gameState);
-                }, 1500);
+                }, 1000);
             });
             return;
         }
@@ -423,6 +430,8 @@ function setButtonsWaiting() {
 
 function showBust() {
     document.getElementById('bust-msg').style.display = 'block';
+    document.getElementById('selection-score-row').style.display = 'none';
+    document.getElementById('selection-score').textContent = 0;
 }
 
 function hideBust() {

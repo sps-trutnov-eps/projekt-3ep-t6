@@ -92,12 +92,18 @@ function updateSelectionScore() {
     const score  = chosen.length > 0 ? checkCurrentScore(chosen) : 0;
     const valid  = chosen.length > 0 ? isSelectionValid(chosen) : false;
 
-    document.getElementById('selection-score').textContent = score;
-    document.getElementById('btn-confirm').disabled = !valid;
-
-    // Vizuální zpětná vazba pro nevalidní výběr
+    const row = document.getElementById('selection-score-row');
     const span = document.getElementById('selection-score');
-    span.style.color = valid ? '#cf763b' : '#7f3004';
+
+    if (chosen.length > 0) {
+        row.style.display = 'inline';
+        span.textContent = score;
+        span.style.color = valid ? '#cf763b' : '#7f3004';
+    } else {
+        row.style.display = 'none';
+    }
+
+    document.getElementById('btn-confirm').disabled = !valid;
 }
 
 //  Aktualizace stavu hry
@@ -187,7 +193,7 @@ async function executeServerRoll(diceValues) {
             setTimeout(() => {
                 if (window.diceRenderer) window.diceRenderer.hideLabels();
                 executeNpcTurn();
-            }, 1500);
+            }, 1000);
             return;
         }
 
@@ -217,8 +223,8 @@ function enterSelectPhase() {
     document.getElementById('btn-reroll').style.display  = 'none';
     document.getElementById('btn-bank').style.display    = 'none';
     document.getElementById('btn-confirm').disabled      = true;
-    document.getElementById('selection-score-row').style.display = 'block';
     document.getElementById('bust-msg').style.display    = 'none';
+    updateSelectionScore();
 }
 
 async function confirmSelection() {
@@ -271,6 +277,8 @@ function enterPostConfirmPhase(diceLeft) {
     document.getElementById('btn-confirm').style.display = 'none';
     document.getElementById('btn-reroll').style.display  = 'inline-block';
     document.getElementById('btn-bank').style.display    = 'inline-block';
+    document.getElementById('selection-score-row').style.display = 'none';
+    document.getElementById('selection-score').textContent = 0;
 
     const d = diceLeft;
     document.getElementById('btn-reroll').textContent =
@@ -313,16 +321,32 @@ async function bankPoints() {
     }
 }
 
+function setTurnIndicator(isPlayerTurn) {
+    const indicator = document.getElementById('turn-indicator');
+    indicator.style.display = 'block';
+    indicator.style.textAlign = 'center';
+    
+    if (isPlayerTurn) {
+        indicator.innerHTML = 'Jsi na tahu';
+        indicator.style.color = '#bbb';
+    } else {
+        indicator.innerHTML = 'Hraje soupeř...';
+        indicator.style.color = '#bbb';
+    }
+}
+
 function enterRollPhase() {
     document.getElementById('btn-roll').style.display    = 'inline-block';
     document.getElementById('btn-confirm').style.display = 'none';
     document.getElementById('btn-reroll').style.display  = 'none';
     document.getElementById('btn-bank').style.display    = 'none';
     setButtonsDisabled(false);
+    setTurnIndicator(true);
 }
 
 async function executeNpcTurn() {
     setButtonsDisabled(true);
+    setTurnIndicator(false);
     
     // NPC dice animation (purely visual, server is authoritative for NPC values)
     if (window.diceRenderer) {
@@ -345,22 +369,26 @@ async function executeNpcTurn() {
             
             if (data.npcBust) {
                 document.getElementById('bust-msg').style.display = 'block';
-                document.getElementById('bust-msg').textContent = 'Chudý starec hodil Farkle! (0 bodů)';
             } else {
-                document.getElementById('bust-msg').style.display = 'block';
-                document.getElementById('bust-msg').textContent = `Chudý starec bankoval ${data.npcScore} bodů!`;
+                const flashWrap = document.getElementById('enemy-turn-score-flash');
+                const flashVal = document.getElementById('enemy-turn-score-value');
+                if (flashWrap && flashVal) {
+                    flashVal.textContent = data.npcScore;
+                    flashWrap.style.opacity = '1';
+                    setTimeout(() => {
+                        flashWrap.style.opacity = '0';
+                    }, 2000);
+                }
             }
 
             setTimeout(() => {
                 document.getElementById('bust-msg').style.display = 'none';
-                document.getElementById('bust-msg').textContent = 'Farkle! Přišel jsi o body v tomto kole.';
                 if (window.diceRenderer) window.diceRenderer.hideLabels();
-                
+
                 if (data.gameState.status !== 'FINISHED') {
                     enterRollPhase();
                 }
-            }, 3000);
-        };
+            }, 1500);        };
 
         if (window.diceRenderer) {
             window.diceRenderer.onSettle(handleNpcResult);
@@ -392,6 +420,7 @@ async function getGameState() {
         const data = await res.json();
         if (data.error) { console.warn('Stav hry:', data.error); return; }
         updateGameState(data);
+        setTurnIndicator(true);
     } catch (err) {
         console.error('Nepodařilo se načíst stav hry:', err);
     }
