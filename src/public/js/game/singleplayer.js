@@ -193,7 +193,7 @@ async function executeServerRoll(diceValues) {
             setTimeout(() => {
                 if (window.diceRenderer) window.diceRenderer.hideLabels();
                 executeNpcTurn();
-            }, 1500);
+            }, 1000);
             return;
         }
 
@@ -321,16 +321,43 @@ async function bankPoints() {
     }
 }
 
+function setTurnIndicator(isPlayerTurn) {
+    const indicator = document.getElementById('turn-indicator');
+    indicator.style.display = 'flex';
+    indicator.style.alignItems = 'center';
+    indicator.style.gap = '0.4rem';
+    
+    if (isPlayerTurn) {
+        indicator.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f0c040" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="3"/>
+                <circle cx="12" cy="12" r="1.5" fill="#f0c040"/>
+            </svg>
+            Jsi na tahu`;
+        indicator.style.color = '#f0c040';
+    } else {
+        indicator.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Hraje soupeř...`;
+        indicator.style.color = '#ccc';
+    }
+}
+
 function enterRollPhase() {
     document.getElementById('btn-roll').style.display    = 'inline-block';
     document.getElementById('btn-confirm').style.display = 'none';
     document.getElementById('btn-reroll').style.display  = 'none';
     document.getElementById('btn-bank').style.display    = 'none';
     setButtonsDisabled(false);
+    setTurnIndicator(true);
 }
 
 async function executeNpcTurn() {
     setButtonsDisabled(true);
+    setTurnIndicator(false);
     
     // NPC dice animation (purely visual, server is authoritative for NPC values)
     if (window.diceRenderer) {
@@ -368,12 +395,11 @@ async function executeNpcTurn() {
             setTimeout(() => {
                 document.getElementById('bust-msg').style.display = 'none';
                 if (window.diceRenderer) window.diceRenderer.hideLabels();
-                
+
                 if (data.gameState.status !== 'FINISHED') {
                     enterRollPhase();
                 }
-            }, 3000);
-        };
+            }, 1500);        };
 
         if (window.diceRenderer) {
             window.diceRenderer.onSettle(handleNpcResult);
@@ -405,6 +431,7 @@ async function getGameState() {
         const data = await res.json();
         if (data.error) { console.warn('Stav hry:', data.error); return; }
         updateGameState(data);
+        setTurnIndicator(true);
     } catch (err) {
         console.error('Nepodařilo se načíst stav hry:', err);
     }

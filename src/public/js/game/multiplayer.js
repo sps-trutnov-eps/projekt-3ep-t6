@@ -327,7 +327,7 @@ async function rollDice(useWild = false) {
                 showBust();
                 setTimeout(() => {
                     renderState(gameState);
-                }, 1500);
+                }, 1000);
             });
             return;
         }
