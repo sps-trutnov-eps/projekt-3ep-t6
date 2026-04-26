@@ -168,10 +168,6 @@ exports.postBankPoints = async (req, res) => {
             return res.json({ success: true, gameState: finishedGame });
         }
 
-        if (gameState.game_mode === 'SINGLEPLAYER') {
-            updatedGame = await singleplayerNpcPoints(updatedGame);
-        }
-
         res.json({ success: true, gameState: updatedGame });
 
     } catch (err) {
@@ -185,23 +181,6 @@ function rollRandomDice(count) {
     const roll = [];
     for (let i = 0; i < count; i++) roll.push(Math.floor(Math.random() * 6) + 1);
     return roll;
-}
-
-// NPC auto-play after player banks or busts in singleplayer
-async function singleplayerNpcPoints(gameState) {
-    if (gameState.game_mode !== 'SINGLEPLAYER') return gameState;
-
-    const roll = rollRandomDice(6);
-    const points = scoreEngine.checkCurrentScore(roll);
-
-    let updatedGame = await gameModel.bankNpcPoints(gameState.id, points);
-
-    if (updatedGame.p2_score >= gameState.target_score) {
-        updatedGame = await gameModel.finishGame(updatedGame.id, null);
-        await userModel.updateStats(gameState.player1_id, false);
-    }
-
-    return updatedGame;
 }
 
 exports.postNpcTurn = async (req, res) => {

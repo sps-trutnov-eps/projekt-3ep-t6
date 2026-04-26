@@ -1,69 +1,96 @@
 //  scoreEngine — kopie /shared/scoreEngine.js pro frontend
-function checkCurrentScore(chosenDice, strict = false) {
+function checkCurrentScore(chosenDice) {
     let diceLeft = [0, 0, 0, 0, 0, 0];
+    let wilds = 0;
     let score = 0;
 
     for (let die of chosenDice) {
-        diceLeft[die - 1]++;
+        if (die === 0) wilds++;
+        else diceLeft[die - 1]++;
     }
 
-    if (diceLeft.every(c => c >= 1)) {
+    // 1. Postupky
+    if (canMakeStraight(diceLeft, wilds, 0, 6)) {
         score += 1500;
-        diceLeft = [0, 0, 0, 0, 0, 0];
-    } else if (diceLeft.slice(1).every(c => c >= 1)) {
+        wilds -= useForStraight(diceLeft, wilds, 0, 6);
+    } else if (canMakeStraight(diceLeft, wilds, 1, 5)) {
         score += 750;
-        for (let i = 1; i < 6; i++) diceLeft[i]--;
-    } else if (diceLeft.slice(0, 5).every(c => c >= 1)) {
+        wilds -= useForStraight(diceLeft, wilds, 1, 5);
+    } else if (canMakeStraight(diceLeft, wilds, 0, 5)) {
         score += 500;
-        for (let i = 0; i < 5; i++) diceLeft[i]--;
+        wilds -= useForStraight(diceLeft, wilds, 0, 5);
     }
 
-    if (diceLeft[0] >= 3) {
-        score += 1000 * Math.pow(2, diceLeft[0] - 3);
-        diceLeft[0] = 0;
-    }
-    for (let i = 1; i < 6; i++) {
-        if (diceLeft[i] >= 3) {
-            score += (i + 1) * 100 * Math.pow(2, diceLeft[i] - 3);
-            diceLeft[i] = 0;
+    // 2. Trojice a více
+    for (let i = 0; i < 6; i++) {
+        let count = diceLeft[i];
+        if (count > 0 || (i === 0 || i === 4)) {
+             if (count < 3 && count > 0 && (count + wilds) >= 3) {
+                 let need = 3 - count;
+                 wilds -= need;
+                 count = 3;
+                 diceLeft[i] = 0;
+             } else if (count >= 3) {
+                 diceLeft[i] = 0;
+             }
+             if (count >= 3) {
+                 let base = (i === 0) ? 1000 : (i + 1) * 100;
+                 score += base * Math.pow(2, count - 3);
+             }
         }
     }
 
+    // 3. Zbylé jedničky a pětky
     score += diceLeft[0] * 100;
-    diceLeft[0] = 0;
     score += diceLeft[4] * 50;
-    diceLeft[4] = 0;
-
-    if (strict) {
-        const remaining = diceLeft.reduce((sum, count) => sum + count, 0);
-        if (remaining > 0) {
-            return 0;
-        }
-    }
-
+    score += wilds * 100;
     return score;
+}
+
+function canMakeStraight(diceLeft, wilds, start, length) {
+    let needed = 0;
+    for (let i = start; i < start + length; i++) {
+        if (diceLeft[i] === 0) needed++;
+    }
+    return wilds >= needed;
+}
+
+function useForStraight(diceLeft, wilds, start, length) {
+    let used = 0;
+    for (let i = start; i < start + length; i++) {
+        if (diceLeft[i] > 0) diceLeft[i]--;
+        else used++;
+    }
+    return used;
 }
 
 function isSelectionValid(chosenDice) {
     if (!chosenDice || chosenDice.length === 0) return false;
     let diceLeft = [0, 0, 0, 0, 0, 0];
-    for (let die of chosenDice) diceLeft[die - 1]++;
+    let wilds = 0;
+    for (let die of chosenDice) {
+        if (die === 0) wilds++;
+        else diceLeft[die - 1]++;
+    }
 
-    // 1. Postupky (odečteme je, pokud existují)
-    if (diceLeft.every(c => c >= 1)) {
-        for (let i = 0; i < 6; i++) diceLeft[i]--;
-    } else if (diceLeft.slice(1).every(c => c >= 1)) {
-        for (let i = 1; i < 6; i++) diceLeft[i]--;
-    } else if (diceLeft.slice(0, 5).every(c => c >= 1)) {
-        for (let i = 0; i < 5; i++) diceLeft[i]--;
+    if (canMakeStraight(diceLeft, wilds, 0, 6)) {
+        wilds -= useForStraight(diceLeft, wilds, 0, 6);
+    } else if (canMakeStraight(diceLeft, wilds, 1, 5)) {
+        wilds -= useForStraight(diceLeft, wilds, 1, 5);
+    } else if (canMakeStraight(diceLeft, wilds, 0, 5)) {
+        wilds -= useForStraight(diceLeft, wilds, 0, 5);
     }
 
     for (let i = 0; i < 6; i++) {
-        if (diceLeft[i] >= 3) diceLeft[i] = 0;
+        if (diceLeft[i] >= 3) {
+            diceLeft[i] = 0;
+        } else if (diceLeft[i] > 0 && (diceLeft[i] + wilds) >= 3) {
+            wilds -= (3 - diceLeft[i]);
+            diceLeft[i] = 0;
+        }
     }
-    diceLeft[0] = 0;
+    diceLeft[0] = 0; 
     diceLeft[4] = 0;
-
     return diceLeft.every(c => c === 0);
 }
 
@@ -324,11 +351,6 @@ function enterRollPhase() {
 async function executeNpcTurn() {
     setButtonsDisabled(true);
     
-    // NPC dice animation (purely visual, server is authoritative for NPC values)
-    if (window.diceRenderer) {
-        window.diceRenderer.roll(6, 'far');
-    }
-
     try {
         const res = await fetch('/game/npc-turn', { method: 'POST' });
         const data = await res.json();
@@ -339,8 +361,12 @@ async function executeNpcTurn() {
             return;
         }
 
+        // NPC dice animation using server values
+        if (window.diceRenderer) {
+            window.diceRenderer.rollToValues(data.npcRoll, 'far');
+        }
+
         const handleNpcResult = () => {
-            if (window.diceRenderer) window.diceRenderer.showValues(data.npcRoll);
             updateGameState(data.gameState);
             
             if (data.npcBust) {
