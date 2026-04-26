@@ -323,26 +323,15 @@ async function bankPoints() {
 
 function setTurnIndicator(isPlayerTurn) {
     const indicator = document.getElementById('turn-indicator');
-    indicator.style.display = 'flex';
-    indicator.style.alignItems = 'center';
-    indicator.style.gap = '0.4rem';
+    indicator.style.display = 'block';
+    indicator.style.textAlign = 'center';
     
     if (isPlayerTurn) {
-        indicator.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f0c040" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="2" width="20" height="20" rx="3"/>
-                <circle cx="12" cy="12" r="1.5" fill="#f0c040"/>
-            </svg>
-            Jsi na tahu`;
-        indicator.style.color = '#f0c040';
+        indicator.innerHTML = 'Jsi na tahu';
+        indicator.style.color = '#bbb';
     } else {
-        indicator.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
-            </svg>
-            Hraje soupeř...`;
-        indicator.style.color = '#ccc';
+        indicator.innerHTML = 'Hraje soupeř...';
+        indicator.style.color = '#bbb';
     }
 }
 
